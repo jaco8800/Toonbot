@@ -1,0 +1,723 @@
+{
+	"Aston Villa": {
+		"subreddit":"https://www.reddit.com/r/avfc",
+		"icon":"[](#team-villa)",
+		"stadium":"Villa Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/villa-park/aston-villa",
+		"bbcname":"aston-villa",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/1/15/Aston_Villa.svg/429px-Aston_Villa.svg.png",
+		"shortname":"Villa",
+		"color":"0x660033"
+	},
+	"Barnsley": {
+		"subreddit":"https://www.reddit.com/r/BarnsleyFC",
+		"icon":"[](#team-barnsley)",
+		"stadium":"Oakwell",
+		"stadlink":"http://www.footballgroundmap.com/ground/oakwell/barnsley",
+		"bbcname":"barnsley",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/c/c9/Barnsley_FC.svg/1012px-Barnsley_FC.svg.png",
+		"shortname":"Barnsley",
+		"color":"0xE9071A"
+	},
+	"Birmingham City": {
+		"subreddit":"https://www.reddit.com/r/bcfc",
+		"icon":"[](#team-blackburn)",
+		"stadium":"St Andrew's",
+		"stadlink":"http://www.footballgroundmap.com/ground/st-andrews/birmingham-city",
+		"bbcname":"birmingham-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/6/68/Birmingham_City_FC_logo.svg/356px-Birmingham_City_FC_logo.svg.png",
+		"shortname":"Birmingham",
+		"color":"0x0079CF"
+	},
+	"Birmingham": {
+		"subreddit":"https://www.reddit.com/r/bcfc",
+		"icon":"[](#team-blackburn)",
+		"stadium":"St Andrew's",
+		"stadlink":"http://www.footballgroundmap.com/ground/st-andrews/birmingham-city",
+		"bbcname":"birmingham-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/6/68/Birmingham_City_FC_logo.svg/356px-Birmingham_City_FC_logo.svg.png",
+		"shortname":"Birmingham",
+		"color":"0x0079CF"
+	},
+	"Blackburn Rovers": {
+		"subreddit":"https://www.reddit.com/r/brfc",
+		"icon":"[](#team-birmingham)",
+		"stadium":"Ewood Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/ewood-park/blackburn-rovers",
+		"bbcname":"blackburn-rovers",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/0/0f/Blackburn_Rovers.svg/180px-Blackburn_Rovers.svg.png",
+		"shortname":"Blackburn",
+		"color":"0x0066cc"
+	},
+	"Blackburn": {
+		"subreddit":"https://www.reddit.com/r/brfc",
+		"icon":"[](#team-birmingham)",
+		"stadium":"Ewood Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/ewood-park/blackburn-rovers",
+		"bbcname":"blackburn-rovers",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/0/0f/Blackburn_Rovers.svg/180px-Blackburn_Rovers.svg.png",
+		"shortname":"Blackburn",
+		"color":"0x0066cc"
+	},
+	"Brentford": {
+		"subreddit":"https://www.reddit.com/r/Brentford",
+		"icon":"[](#team-brentford)",
+		"stadium":"Griffin Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/griffin-park/brentford",
+		"bbcname":"brentford",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/c/c9/Brentford_FC_logo.svg",
+		"shortname":"Barnsley",
+		"color":"0xC61D23"
+	},
+	"Brighton & Hove Albion": {
+		"subreddit":"https://www.reddit.com/r/BrightonHoveAlbion",
+		"icon":"[](#team-brighton)",
+		"stadium":"Falmer Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/falmer-stadium-the-american-express-community-stadium/brighton-and-hove-albion",
+		"bbcname":"brighton-and-hove-albion",
+		"badge":"http://futhead.cursecdn.com/static/img/15/clubs_large/1808.png",
+		"shortname":"Brighton",
+		"color":"0x0039a6"
+	},
+	"Brighton": {
+		"subreddit":"https://www.reddit.com/r/BrightonHoveAlbion",
+		"icon":"[](#team-brighton)",
+		"stadium":"Falmer Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/falmer-stadium-the-american-express-community-stadium/brighton-and-hove-albion",
+		"bbcname":"brighton-and-hove-albion",
+		"badge":"http://futhead.cursecdn.com/static/img/15/clubs_large/1808.png",
+		"shortname":"Brighton",
+		"color":"0x0039a6"
+	},
+	"Bristol City": {
+		"subreddit":"https://www.reddit.com/r/BristolCity",
+		"icon":"[](#team-bristol)",
+		"stadium":"Ashton Gate",
+		"stadlink":"http://www.footballgroundmap.com/ground/ashton-gate/bristol-city",
+		"bbcname":"bristol-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/0/00/Bristol_City_FC.svg/960px-Bristol_City_FC.svg.png",
+		"shortname":"Bristol",
+		"color":"0xE2001A"
+	},
+	"Burton": {
+		"subreddit":"https://www.reddit.com/r/BurtonFC",
+		"icon":"[](#team-burton)",
+		"stadium":"The Pirelli Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-pirelli-stadium/burton-albion",
+		"bbcname":"burton-albion",
+		"badge":"http://futhead.cursecdn.com/static/img/15/clubs_large/15015.png",
+		"shortname":"Burton",
+		"color":"0xFFEF00"
+	},
+	"Burton Albion": {
+		"subreddit":"https://www.reddit.com/r/BurtonFC",
+		"icon":"[](#team-burton)",
+		"stadium":"The Pirelli Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-pirelli-stadium/burton-albion",
+		"bbcname":"burton-albion",
+		"badge":"http://futhead.cursecdn.com/static/img/15/clubs_large/15015.png",
+		"shortname":"Burton",
+		"color":"0xFFEF00"
+	},
+	"Cardiff City": {
+		"subreddit":"https://www.reddit.com/r/bluebirds",
+		"icon":"[](#team-cardiff)",
+		"stadium":"Cardiff City Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/cardiff-city-stadium",
+		"bbcname":"cardiff-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/3/3c/Cardiff_City_crest.svg/576px-Cardiff_City_crest.svg.png",
+		"shortname":"Cardiff",
+		"color":"0x105daa"
+	},
+	"Cardiff": {
+		"subreddit":"https://www.reddit.com/r/bluebirds",
+		"icon":"[](#team-cardiff)",
+		"stadium":"Cardiff City Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/cardiff-city-stadium",
+		"bbcname":"cardiff-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/3/3c/Cardiff_City_crest.svg/576px-Cardiff_City_crest.svg.png",
+		"shortname":"Cardiff",
+		"color":"0x105daa"
+	},
+	"Derby County": {
+		"subreddit":"https://www.reddit.com/r/DerbyCounty",
+		"icon":"[](#team-derby)",
+		"stadium":"Pride Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/pride-park-ipro-stadium/derby-county",
+		"bbcname":"derby-county",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Derby_County_crest.svg/1280px-Derby_County_crest.svg.png",
+		"shortname":"Derby",
+		"color":"0xFFFFFF"
+	},
+	"Derby": {
+		"subreddit":"https://www.reddit.com/r/DerbyCounty",
+		"icon":"[](#team-derby)",
+		"stadium":"Pride Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/pride-park-ipro-stadium/derby-county",
+		"bbcname":"derby-county",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Derby_County_crest.svg/1280px-Derby_County_crest.svg.png",
+		"shortname":"Derby",
+		"color":"0xFFFFFF"
+	},
+	"Fulham": {
+		"subreddit":"https://www.reddit.com/r/fulhamfc",
+		"icon":"[](#team-fulham)",
+		"stadium":"Craven Cottage",
+		"stadlink":"http://www.footballgroundmap.com/ground/craven-cottage/fulham",
+		"bbcname":"fulham",
+		"badge":"http://www.friendsoffulham.com/images/crest-2001.jpg",
+		"shortname":"Fulham",
+		"color":"0xd71c2d"
+	},
+	"Huddersfield Town": {
+		"subreddit":"https://www.reddit.com/r/huddersfieldtownfc",
+		"icon":"[](#team-huddersfield)",
+		"stadium":"TheJohnSmith'sStadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-john-smiths-stadium/huddersfield-town",
+		"bbcname":"huddersfield-town",
+		"badge":"https://www.genesissports.co.uk/wp-content/uploads/2014/03/huddersfield-town.jpg",
+		"shortname":"Huddersfield",
+		"color":"0x007dc3"
+	},
+	"Huddersfield": {
+		"subreddit":"https://www.reddit.com/r/huddersfieldtownfc",
+		"icon":"[](#team-huddersfield)",
+		"stadium":"TheJohnSmith'sStadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-john-smiths-stadium/huddersfield-town",
+		"bbcname":"huddersfield-town",
+		"badge":"https://www.genesissports.co.uk/wp-content/uploads/2014/03/huddersfield-town.jpg",
+		"shortname":"Huddersfield",
+		"color":"0x007dc3"
+	},
+	"Ipswich": {
+		"subreddit":"https://www.reddit.com/r/IpswichTownFC",
+		"icon":"[](#team-ipswich)",
+		"stadium":"Portman Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/portman-road/ipswich-town",
+		"bbcname":"ipswich-town",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Ipswich_Town.svg/822px-Ipswich_Town.svg.png",
+		"shortname":"Ipswich",
+		"color":"0x0066b3"
+	},
+	"Ipswich Town": {
+		"subreddit":"https://www.reddit.com/r/IpswichTownFC",
+		"icon":"[](#team-ipswich)",
+		"stadium":"Portman Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/portman-road/ipswich-town",
+		"bbcname":"ipswich-town",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Ipswich_Town.svg/822px-Ipswich_Town.svg.png",
+		"shortname":"Ipswich",
+		"color":"0x0066b3"
+	},
+	"Leeds": {
+		"subreddit":"https://www.reddit.com/r/LeedsUnited",
+		"icon":"[](#team-leeds)",
+		"stadium":"Elland Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/elland-road/leeds-united",
+		"bbcname":"leeds-united",
+		"badge":"http://www.wafll.com/united-badges/european-shield.jpg",
+		"shortname":"Leeds",
+		"color":"0x005b9e"
+	},
+	"Leeds United": {
+		"subreddit":"https://www.reddit.com/r/LeedsUnited",
+		"icon":"[](#team-leeds)",
+		"stadium":"Elland Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/elland-road/leeds-united",
+		"bbcname":"leeds-united",
+		"badge":"http://www.wafll.com/united-badges/european-shield.jpg",
+		"shortname":"Leeds",
+		"color":"0x005b9e"
+	},
+	"Newcastle": {
+		"subreddit":"https://www.reddit.com/r/NUFC",
+		"icon":"[](#team-toon)",
+		"stadium":"St James' Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/st-james-park/newcastle-united",
+		"bbcname":"newcastle-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Newcastle_United_Logo.svg/1017px-Newcastle_United_Logo.svg.png",
+		"shortname":"Newcastle",
+		"color":"0x111111"
+	},
+	"Newcastle United": {
+		"subreddit":"https://www.reddit.com/r/NUFC",
+		"icon":"[](#team-toon)",
+		"stadium":"St James' Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/st-james-park/newcastle-united",
+		"bbcname":"newcastle-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Newcastle_United_Logo.svg/1017px-Newcastle_United_Logo.svg.png",
+		"shortname":"Newcastle",
+		"color":"0x111111"
+	},
+	"Newcastle Utd": {
+		"subreddit":"https://www.reddit.com/r/NUFC",
+		"icon":"[](#team-toon)",
+		"stadium":"St James' Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/st-james-park/newcastle-united",
+		"bbcname":"newcastle-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Newcastle_United_Logo.svg/1017px-Newcastle_United_Logo.svg.png",
+		"shortname":"Newcastle",
+		"color":"0x111111"
+	},
+	"Newcastle Utd (Eng)": {
+		"subreddit":"https://www.reddit.com/r/NUFC",
+		"icon":"[](#team-toon)",
+		"stadium":"St James' Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/st-james-park/newcastle-united",
+		"bbcname":"newcastle-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Newcastle_United_Logo.svg/1017px-Newcastle_United_Logo.svg.png",
+		"shortname":"Newcastle",
+		"color":"0x111111"
+	},
+	"Norwich City": {
+		"subreddit":"https://www.reddit.com/r/NorwichCity",
+		"icon":"[](#team-norwich)",
+		"stadium":"Carrow Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/carrow-road/norwich-city",
+		"bbcname":"norwich-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Norwich_City.svg/916px-Norwich_City.svg.png",
+		"shortname":"Norwich",
+		"color":"0x00853e"
+	},
+	"Norwich": {
+		"subreddit":"https://www.reddit.com/r/NorwichCity",
+		"icon":"[](#team-norwich)",
+		"stadium":"Carrow Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/carrow-road/norwich-city",
+		"bbcname":"norwich-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Norwich_City.svg/916px-Norwich_City.svg.png",
+		"shortname":"Norwich",
+		"color":"0x00853e"
+	},
+	"Nottingham": {
+		"subreddit":"https://www.reddit.com/r/nffc",
+		"icon":"[](#team-forest)",
+		"stadium":"The City Ground",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-city-ground/nottingham-forest",
+		"bbcname":"nottingham-forest",
+		"badge":"http://www.fm-base.co.uk/forum/attachments/football-manager-2014-manager-stories/461865d1262866815-shaking-up-football-league-bury-fc-story-forest.jpg",
+		"shortname":"Notts Forest",
+		"color":"0x9a0a16"
+	},
+	"Nottingham Forest": {
+		"subreddit":"https://www.reddit.com/r/nffc",
+		"icon":"[](#team-forest)",
+		"stadium":"The City Ground",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-city-ground/nottingham-forest",
+		"bbcname":"nottingham-forest",
+		"badge":"http://www.fm-base.co.uk/forum/attachments/football-manager-2014-manager-stories/461865d1262866815-shaking-up-football-league-bury-fc-story-forest.jpg",
+		"shortname":"Notts Forest",
+		"color":"0x9a0a16"
+	},
+	"Preston": {
+		"subreddit":"https://www.reddit.com/r/pne",
+		"icon":"[](#team-preston)",
+		"stadium":"Deepdale",
+		"stadlink":"http://www.footballgroundmap.com/ground/deepdale/preston-north-end",
+		"bbcname":"preston-north-end",
+		"badge":"http://sportekspres.com/wp-content/uploads/2016/05/preston.png",
+		"shortname":"Preston",
+		"color":"0x001C58"
+	},
+	"Preston North End": {
+		"subreddit":"https://www.reddit.com/r/pne",
+		"icon":"[](#team-preston)",
+		"stadium":"Deepdale",
+		"stadlink":"http://www.footballgroundmap.com/ground/deepdale/preston-north-end",
+		"bbcname":"preston-north-end",
+		"badge":"http://sportekspres.com/wp-content/uploads/2016/05/preston.png",
+		"shortname":"Preston",
+		"color":"0x001C58"
+	},
+	"QPR": {
+		"subreddit":"https://www.reddit.com/r/superhoops",
+		"icon":"[](#team-QPR)",
+		"stadium":"Loftus Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/loftus-road/queens-park-rangers",
+		"bbcname":"queens-park-rangers",
+		"badge":"http://www.qpr.co.uk/cms_images/team/qpr-crest64-3103808.png",
+		"shortname":"QPR",
+		"color":"0x0054A4"
+	},
+	"Queens Park Rangers": {
+		"subreddit":"https://www.reddit.com/r/superhoops",
+		"icon":"[](#team-QPR)",
+		"stadium":"Loftus Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/loftus-road/queens-park-rangers",
+		"bbcname":"queens-park-rangers",
+		"badge":"http://www.qpr.co.uk/cms_images/team/qpr-crest64-3103808.png",
+		"shortname":"QPR",
+		"color":"0x0054A4"
+	},
+	"Reading": {
+		"subreddit":"https://www.reddit.com/r/Urz",
+		"icon":"[](#team-reading)",
+		"stadium":"The Madejski Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-madejski-stadium/reading",
+		"bbcname":"reading",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Reading_FC.svg/1024px-Reading_FC.svg.png",
+		"shortname":"Reading",
+		"color":"0x0038A8"
+	},
+	"Rotherham United": {
+		"subreddit":"https://www.reddit.com/r/RotherhamUtd",
+		"icon":"[](#team-rotherham)",
+		"stadium":"New York Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/new-york-stadium/rotherham-united",
+		"bbcname":"rotherham-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/c/c0/Rotherham_United_FC.svg/771px-Rotherham_United_FC.svg.png",
+		"shortname":"Rotherham",
+		"color":"0xE20220"
+	},
+	"Rotherham": {
+		"subreddit":"https://www.reddit.com/r/RotherhamUtd",
+		"icon":"[](#team-rotherham)",
+		"stadium":"New York Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/new-york-stadium/rotherham-united",
+		"bbcname":"rotherham-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/c/c0/Rotherham_United_FC.svg/771px-Rotherham_United_FC.svg.png",
+		"shortname":"Rotherham",
+		"color":"0xE20220"
+	},
+	"Sheffield Wednesday": {
+		"subreddit":"https://www.reddit.com/r/SheffieldWednesday",
+		"icon":"[](#team-wednesday)",
+		"stadium":"Hillsborough",
+		"stadlink":"http://www.footballgroundmap.com/ground/hillsborough/sheffield-wednesday",
+		"bbcname":"sheffield-wednesday",
+		"badge":"http://2.bp.blogspot.com/-xacsIy61goI/VqYUAJk9xcI/AAAAAAAA28U/yfAU8HwpL7I/s550/Sheffield-Wednesday-Crest%2B%25282%2529.jpg",
+		"shortname":"Sheff Wed",
+		"color":"0x005DAA"
+	},
+	"Sheffield Wed": {
+		"subreddit":"https://www.reddit.com/r/SheffieldWednesday",
+		"icon":"[](#team-wednesday)",
+		"stadium":"Hillsborough",
+		"stadlink":"http://www.footballgroundmap.com/ground/hillsborough/sheffield-wednesday",
+		"bbcname":"sheffield-wednesday",
+		"badge":"http://2.bp.blogspot.com/-xacsIy61goI/VqYUAJk9xcI/AAAAAAAA28U/yfAU8HwpL7I/s550/Sheffield-Wednesday-Crest%2B%25282%2529.jpg",
+		"shortname":"Sheff Wed",
+		"color":"0x005DAA"
+	},
+	"Wigan": {
+		"subreddit":"https://www.reddit.com/r/latics",
+		"icon":"[](#team-wigan)",
+		"stadium":"The DW Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-dw-stadium/wigan-athletic",
+		"bbcname":"wigan-athletic",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Wigan_Athletic.svg/1024px-Wigan_Athletic.svg.png",
+		"shortname":"Wigan",
+		"color":"0x005daa"
+	},
+	"Wigan Athletic": {
+		"subreddit":"https://www.reddit.com/r/latics",
+		"icon":"[](#team-wigan)",
+		"stadium":"The DW Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-dw-stadium/wigan-athletic",
+		"bbcname":"wigan-athletic",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Wigan_Athletic.svg/1024px-Wigan_Athletic.svg.png",
+		"shortname":"Wigan",
+		"color":"0x005daa"
+	},
+	"Wolverhampton Wanderers": {
+		"subreddit":"https://www.reddit.com/r/WWFC",
+		"icon":"[](#team-wolves)",
+		"stadium":"Molineux",
+		"stadlink":"http://www.footballgroundmap.com/ground/molineux/wolverhampton-wanderers",
+		"bbcname":"wolverhampton-wanderers",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/f/fc/Wolverhampton_Wanderers.svg/1179px-Wolverhampton_Wanderers.svg.png",
+		"shortname":"Wolves",
+		"color":"0xFDB913"
+	},
+	"Wolves": {
+		"subreddit":"https://www.reddit.com/r/WWFC",
+		"icon":"[](#team-wolves)",
+		"stadium":"Molineux",
+		"stadlink":"http://www.footballgroundmap.com/ground/molineux/wolverhampton-wanderers",
+		"bbcname":"wolverhampton-wanderers",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/f/fc/Wolverhampton_Wanderers.svg/1179px-Wolverhampton_Wanderers.svg.png",
+		"shortname":"Wolves",
+		"color":"0xFDB913"
+	},
+
+	"Bournemouth": {
+		"subreddit":"https://www.reddit.com/r/AFCBournemouth",
+		"icon":"[](#team-bournemouth)",
+		"stadium":"Dean Court",
+		"stadlink":"http://www.footballgroundmap.com/ground/dean-court-the-vitality-stadium/afc-bournemouth",
+		"bbcname":"afc-bournemouth",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/e/e5/AFC_Bournemouth_%282013%29.svg/241px-AFC_Bournemouth_%282013%29.svg.png",
+		"shortname":"Bournemouth",
+		"color":"0xE62333"
+	},
+	"Arsenal": {
+		"subreddit":"https://www.reddit.com/r/gunners",
+		"icon":"[](#team-arsenal)",
+		"stadium":"The Emirates Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-emirates-stadium/arsenal",
+		"bbcname":"arsenal",
+		"badge":"http://www.tankedup-imaging.com/css_dev/images/image02.gif",
+		"shortname":"Arsenal",
+		"color":"0xED1B24"
+	},
+	"Burnley": {
+		"subreddit":"https://www.reddit.com/r/burnleyfc",
+		"icon":"[](#team-burnley)",
+		"stadium":"Turf Moor",
+		"stadlink":"http://www.footballgroundmap.com/ground/turf-moor/burnley",
+		"bbcname":"burnley",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/0/02/Burnley_FC_badge.png",
+		"shortname":"Burnley",
+		"color":"0x8CCCE5"
+	},
+	"Chelsea": {
+		"subreddit":"https://www.reddit.com/r/chelseafc",
+		"icon":"[](#team-chelsea)",
+		"stadium":"Stamford Bridge",
+		"stadlink":"http://www.footballgroundmap.com/ground/stamford-bridge/chelsea",
+		"bbcname":"chelsea",
+		"badge":"http://www.chelseafc.com/content/dam/cfc/menu-folders/Club/History/Badges/Club-Badges-Gallery/cfc-badge-2004-.jpg",
+		"shortname":"Chelsea",
+		"color":"0x034694"
+	},
+	"Crystal Palace": {
+		"subreddit":"https://www.reddit.com/r/crystalpalace",
+		"icon":"[](#team-palace)",
+		"stadium":"Selhurst Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/selhurst-park/crystal-palace",
+		"bbcname":"crystal-palace",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Crystal_Palace_FC_logo.svg/821px-Crystal_Palace_FC_logo.svg.png",
+		"shortname":"Palace",
+		"color":"0x1B458F"
+	},
+	"Everton": {
+		"subreddit":"https://www.reddit.com/r/everton",
+		"icon":"[](#team-everton)",
+		"stadium":"Goodison Park",
+		"stadlink":"http://www.footballgroundmap.com/ground/goodison-park/everton",
+		"bbcname":"everton",
+		"badge":"http://www.evertonfc.com/content/history/d2qsy1h1438jt3.cloudfront.net///d2qsy1h1438jt3.cloudfront.net/~/media/6e7d10673424491d9439e6cc208f7882.jpg?la=en",
+		"shortname":"Everton",
+		"color":"0x274488"
+	},
+	"Hull City": {
+		"subreddit":"https://www.reddit.com/r/HullCity",
+		"icon":"[](#team-hull)",
+		"stadium":"The KC Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-kc-stadium/hull-city",
+		"bbcname":"hull-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/Hull_City.svg/1128px-Hull_City.svg.png",
+		"shortname":"Hull",
+		"color":"0xF5A12D"
+	},
+	"Leicester": {
+		"subreddit":"https://www.reddit.com/r/lcfc",
+		"icon":"[](#team-leicester)",
+		"stadium":"The King Power Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-king-power-stadium/leicester-city",
+		"bbcname":"leicester-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/b/b6/Leicester_City.svg",
+		"shortname":"Leicester",
+		"color":"0x0053A0"
+	},
+	"Leicester City": {
+		"subreddit":"https://www.reddit.com/r/lcfc",
+		"icon":"[](#team-leicester)",
+		"stadium":"The King Power Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-king-power-stadium/leicester-city",
+		"bbcname":"leicester-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/b/b6/Leicester_City.svg",
+		"shortname":"Leicester",
+		"color":"0x0053A0"
+	},
+	"Liverpool": {
+		"subreddit":"https://www.reddit.com/r/liverpoolfc",
+		"icon":"[](#team-liverpool)",
+		"stadium":"Anfield",
+		"stadlink":"http://www.footballgroundmap.com/ground/anfield/liverpool",
+		"bbcname":"liverpool",
+		"badge":"http://www.lfchistory.net/Images/lfc/LIVE_5396.gif",
+		"shortname":"Liverpool",
+		"color":"0xD00027"
+	},
+	"Manchester City": {
+		"subreddit":"https://www.reddit.com/r/MCFC",
+		"icon":"[](#team-mancity)",
+		"stadium":"Etihad Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-city-of-manchester-stadium-etihad-stadium/manchester-city",
+		"bbcname":"manchester-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Manchester_City_FC_badge.svg/1024px-Manchester_City_FC_badge.svg.png",
+		"shortname":"Man City",
+		"color":"0x5CBFEB"
+	},
+	"Man City": {
+		"subreddit":"https://www.reddit.com/r/MCFC",
+		"icon":"[](#team-mancity)",
+		"stadium":"Etihad Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-city-of-manchester-stadium-etihad-stadium/manchester-city",
+		"bbcname":"manchester-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Manchester_City_FC_badge.svg/1024px-Manchester_City_FC_badge.svg.png",
+		"shortname":"Man City",
+		"color":"0x5CBFEB"
+	},
+	"Manchester United": {
+		"subreddit":"https://www.reddit.com/r/reddevils",
+		"icon":"[](#team-manu)",
+		"stadium":"Old Trafford",
+		"stadlink":"http://www.footballgroundmap.com/ground/old-trafford/manchester-united",
+		"bbcname":"manchester-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Manchester_United_FC_crest.svg/1010px-Manchester_United_FC_crest.svg.png",
+		"shortname":"Man United",
+		"color":"0xDA020E"
+	},
+	"Man Utd": {
+		"subreddit":"https://www.reddit.com/r/reddevils",
+		"icon":"[](#team-manu)",
+		"stadium":"Old Trafford",
+		"stadlink":"http://www.footballgroundmap.com/ground/old-trafford/manchester-united",
+		"bbcname":"manchester-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Manchester_United_FC_crest.svg/1010px-Manchester_United_FC_crest.svg.png",
+		"shortname":"Man United",
+		"color":"0xDA020E"
+	},
+	"Middlesbrough": {
+		"subreddit":"https://www.reddit.com/r/boro",
+		"icon":"[](#team-boro)",
+		"stadium":"The Riverside Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-riverside-stadium/middlesbrough",
+		"bbcname":"middlesbrough",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/Middlesbrough_FC_crest.svg/983px-Middlesbrough_FC_crest.svg.png",
+		"shortname":"Middlesbrough",
+		"color":"0xFF0000"
+	},
+	"Southampton": {
+		"subreddit":"https://www.reddit.com/r/SaintsFC",
+		"icon":"[](#team-southampton)",
+		"stadium":"St Mary's Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/st-marys-stadium/southampton",
+		"bbcname":"southampton",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/c/c9/FC_Southampton.svg/898px-FC_Southampton.svg.png",
+		"shortname":"Southampton",
+		"color":"0xED1A3B"
+	},
+	"Stoke": {
+		"subreddit":"https://www.reddit.com/r/StokeCityFC",
+		"icon":"[](#team-stoke)",
+		"stadium":"bet365 Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/bet365-stadium-the-britannia-stadium/stoke-city",
+		"bbcname":"stoke-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Stoke_City_FC.svg/885px-Stoke_City_FC.svg.png",
+		"shortname":"Stoke",
+		"color":"0xE03A3E"
+	},
+	"Stoke City": {
+		"subreddit":"https://www.reddit.com/r/StokeCityFC",
+		"icon":"[](#team-stoke)",
+		"stadium":"bet365 Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/bet365-stadium-the-britannia-stadium/stoke-city",
+		"bbcname":"stoke-city",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Stoke_City_FC.svg/885px-Stoke_City_FC.svg.png",
+		"shortname":"Stoke",
+		"color":"0xE03A3E"
+	},
+	"Sunderland": {
+		"subreddit":"https://www.reddit.com/r/safc",
+		"icon":"[](#team-scum)",
+		"stadium":"The Stadium of Light",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-stadium-of-light/sunderland",
+		"bbcname":"sunderland",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/7/77/Logo_Sunderland.svg/1229px-Logo_Sunderland.svg.png",
+		"shortname":"Sunderland",
+		"color":"0xEB172B"
+	},
+	"Swansea": {
+		"subreddit":"https://www.reddit.com/r/swanseacity",
+		"icon":"[](#team-swansea)",
+		"stadium":"The Liberty Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-liberty-stadium/swansea-city",
+		"bbcname":"swansea-city",
+		"badge":"http://premierskillsenglish.britishcouncil.org/sites/default/files/styles/badge/public/learning/36/badge/swansea_city_profile.png?itok=-93I2VYi",
+		"shortname":"Swansea",
+		"color":"0x000000"
+	},
+	"Swansea City": {
+		"subreddit":"https://www.reddit.com/r/swanseacity",
+		"icon":"[](#team-swansea)",
+		"stadium":"The Liberty Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-liberty-stadium/swansea-city",
+		"bbcname":"swansea-city",
+		"badge":"http://premierskillsenglish.britishcouncil.org/sites/default/files/styles/badge/public/learning/36/badge/swansea_city_profile.png?itok=-93I2VYi",
+		"shortname":"Swansea",
+		"color":"0x000000"
+	},
+	"Tottenham Hotspur": {
+		"subreddit":"https://www.reddit.com/r/coys",
+		"icon":"[](#team-spurs)",
+		"stadium":"White Hart Lane",
+		"stadlink":"http://www.footballgroundmap.com/ground/white-hart-lane/tottenham-hotspur",
+		"bbcname":"tottenham-hotspur",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/b/b4/Tottenham_Hotspur.svg/519px-Tottenham_Hotspur.svg.png",
+		"shortname":"Tottenham",
+		"color":"0x001C58"
+	},
+	"Tottenham": {
+		"subreddit":"https://www.reddit.com/r/coys",
+		"icon":"[](#team-spurs)",
+		"stadium":"White Hart Lane",
+		"stadlink":"http://www.footballgroundmap.com/ground/white-hart-lane/tottenham-hotspur",
+		"bbcname":"tottenham-hotspur",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/b/b4/Tottenham_Hotspur.svg/519px-Tottenham_Hotspur.svg.png",
+		"shortname":"Tottenham",
+		"color":"0x001C58"
+	},
+	"Watford": {
+		"subreddit":"https://www.reddit.com/r/Watford_FC",
+		"icon":"[](#team-watford)",
+		"stadium":"Vicarage Road",
+		"stadlink":"http://www.footballgroundmap.com/ground/vicarage-road/watford",
+		"bbcname":"watford",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/e/e2/Watford.svg/918px-Watford.svg.png",
+		"shortname":"Watford",
+		"color":"0xED2127"
+	},
+	"West Brom": {
+		"subreddit":"https://www.reddit.com/r/WBAfootball",
+		"icon":"[](#team-brom)",
+		"stadium":"The Hawthorns",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-hawthorns/west-bromwich-albion",
+		"bbcname":"west-bromwich-albion",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/8/8b/West_Bromwich_Albion.svg/856px-West_Bromwich_Albion.svg.png",
+		"shortname":"West Brom",
+		"color":"0x091453"
+	},
+	"West Bromwich Albion": {
+		"subreddit":"https://www.reddit.com/r/WBAfootball",
+		"icon":"[](#team-brom)",
+		"stadium":"The Hawthorns",
+		"stadlink":"http://www.footballgroundmap.com/ground/the-hawthorns/west-bromwich-albion",
+		"bbcname":"west-bromwich-albion",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/8/8b/West_Bromwich_Albion.svg/856px-West_Bromwich_Albion.svg.png",
+		"shortname":"West Brom",
+		"color":"0x091453"
+	},
+	"West Ham": {
+		"subreddit":"https://www.reddit.com/r/Hammers",
+		"icon":"[](#team-ham)",
+		"stadium":"London Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/london-stadium-olympic-stadium/west-ham-united",
+		"bbcname":"west-ham-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/e/e0/West_Ham_United_FC.svg/1063px-West_Ham_United_FC.svg.png",
+		"shortname":"West Ham",
+		"color":"0x60223B"
+	},
+	"West Ham United": {
+		"subreddit":"https://www.reddit.com/r/Hammers",
+		"icon":"[](#team-ham)",
+		"stadium":"London Stadium",
+		"stadlink":"http://www.footballgroundmap.com/ground/london-stadium-olympic-stadium/west-ham-united",
+		"bbcname":"west-ham-united",
+		"badge":"https://upload.wikimedia.org/wikipedia/en/thumb/e/e0/West_Ham_United_FC.svg/1063px-West_Ham_United_FC.svg.png",
+		"shortname":"West Ham",
+		"color":"0x60223B"
+	}
+}

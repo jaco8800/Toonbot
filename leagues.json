@@ -1,0 +1,55 @@
+{
+	"English Premier League": {
+		"ais": "http://www.bbc.co.uk/sport/football/live-scores/premier-league",
+		"table": "http://www.bbc.co.uk/sport/football/premier-league/table"
+	},
+	"English Championship": {
+		"ais": "http://www.bbc.co.uk/sport/football/live-scores/championship",
+		"table": "http://www.bbc.co.uk/sport/football/championship/table"
+	},
+	"English League One": {
+		"table":"http://www.bbc.co.uk/sport/football/league-one/table",
+		"ais":"http://www.bbc.co.uk/sport/football/live-scores/league-one"
+	},
+	"English League Two": {
+		"table":"http://www.bbc.co.uk/sport/football/league-two/table",
+		"ais":"http://www.bbc.co.uk/sport/football/live-scores/league-two"
+	},
+	"Scottish Premier League":{
+		"table":"http://www.bbc.co.uk/sport/football/scottish-premiership/table",
+		"ais":"http://www.bbc.co.uk/sport/football/live-scores/scottish-premiership"
+	},
+	"Scottish Championship":{
+		"table":"http://www.bbc.co.uk/sport/football/scottish-championship/table",
+		"ais":"http://www.bbc.co.uk/sport/football/live-scores/scottish-championship"
+	},
+	"Scottish League One":{
+		"table":"http://www.bbc.co.uk/sport/football/scottish-league-one/table",
+		"ais":"http://www.bbc.co.uk/sport/football/live-scores/scottish-league-one"
+	},
+	"Scottish League Two":{
+		"table":"http://www.bbc.co.uk/sport/football/scottish-league-two/table",
+		"ais":"http://www.bbc.co.uk/sport/football/live-scores/scottish-league-two"
+	},
+	"Austrian Bundesliga":{
+		"table":"http://www.bbc.co.uk/sport/football/austrian-bundesliga/table"
+	},
+	"German Bundesliga": {
+		"table":"http://www.bbc.co.uk/sport/football/german-bundesliga/table"
+	},
+	"Italian Serie A": {
+		"table":"http://www.bbc.co.uk/sport/football/italian-serie-a/table"
+	},
+	"French Ligue One": {
+		"table":"http://www.bbc.co.uk/sport/football/french-ligue-one/table"
+	},
+	"Portuguese Primeira Liga NOS":{
+		"table":"http://www.bbc.co.uk/sport/football/portuguese-primeira-liga/table"
+	},
+	"Spanish La Liga": {
+		"table":"http://www.bbc.co.uk/sport/football/spanish-la-liga/table"
+	},
+	"American Major League Soccer":{
+		"table":"http://us.soccerway.com/national/united-states/mls"
+	}
+}
