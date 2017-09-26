@@ -10,11 +10,11 @@ import json
 import re
 
 # because fuck it why not.
-timedict = {"0":"🕛","030":"🕧","1":"🕐", "130":"🕜", "2":"🕑", "230":"🕝",
-			"3":"🕒", "330":"🕞", "4":"🕓", "430":"🕟", "5":"🕔", "530":"🕠",
-			"6":"🕕", "630":"🕡", "7":"🕖", "730":"🕢", "8":"🕗", "830":"🕣",
-			"9":"🕘", "930":"🕤", "10":"🕙", "1030":"🕥", "11":"🕚", "1130":"🕦",
-			"12":"🕛", "1230":"🕧"}
+timedict = {"0":"ðŸ•›","030":"ðŸ•§","1":"ðŸ•", "130":"ðŸ•œ", "2":"ðŸ•‘", "230":"ðŸ•",
+			"3":"ðŸ•’", "330":"ðŸ•ž", "4":"ðŸ•“", "430":"ðŸ•Ÿ", "5":"ðŸ•”", "530":"ðŸ• ",
+			"6":"ðŸ••", "630":"ðŸ•¡", "7":"ðŸ•–", "730":"ðŸ•¢", "8":"ðŸ•—", "830":"ðŸ•£",
+			"9":"ðŸ•˜", "930":"ðŸ•¤", "10":"ðŸ•™", "1030":"ðŸ•¥", "11":"ðŸ•š", "1130":"ðŸ•¦",
+			"12":"ðŸ•›", "1230":"ðŸ•§"}
 
 class Live:
 	""" Get live scores for leagues worldwide """
@@ -45,10 +45,11 @@ class Live:
 				for i in self.bot.config:
 					if "scorechannel" in self.bot.config[i]:
 						ch = self.bot.config[i]["scorechannel"]
+						if ch is None:
+							continue
 						sc = self.bot.get_channel(int(ch))
-						if sc is not None:
-							await sc.purge()
-							numservs += 1
+						await sc.purge()
+						numservs += 1
 			# Shield from crashes.
 			try:
 				c = self.bot.session
@@ -89,7 +90,7 @@ class Live:
 					time = j.xpath('.//span[contains(@class,"time")]/text()')
 					scor = j.xpath('.//span[contains(@class,"number--home")]/text()|.//span[contains(@class,"number--away")]/text()')
 					if notes:
-						notes = f"`ℹ {''.join(notes)}`"
+						notes = f"`â„¹ {''.join(notes)}`"
 					if len(time) == 1: # Fuck it let's be daft and convert the times to the nearest emoji
 						time = time[0]
 						left,mid,right = time.partition(":")
@@ -111,34 +112,34 @@ class Live:
 						precol = ""
 						midcol = " - ".join(scor)
 						if midcol == "P - P":
-							precol = "`⛔PP`"
+							precol = "`â›”PP`"
 							miodcol = "v"
 					if "ET" in notes:
-						precol = "`⚽ET`"
+						precol = "`âš½ET`"
 						notes.replace("ET","")
 					if notes == "`FT`":
 						notes = ""
-						precol = "`✅FT`"
+						precol = "`âœ…FT`"
 					elif "FT" in notes:
 						notes = notes.replace("FT"," ")
-						precol = "`✅FT`"
+						precol = "`âœ…FT`"
 					elif "AET" in notes:
 						notes = notes.replace("AET"," ")
-						precol = "`⚽AET`"
+						precol = "`âš½AET`"
 					if "HT" in notes:
 						notes = notes.replace("HT","")
-						precol = "`⏸HT`"
+						precol = "`â¸HT`"
 					if "min" in notes:
 						regex = re.search(r"\d+\smins?",notes)
 						notes = notes.replace(regex.group(),"")
-						if "`⚽ET`" in precol:
-							precol = f"`⚽ET {regex.group()}`"
+						if "`âš½ET`" in precol:
+							precol = f"`âš½ET {regex.group()}`"
 						else:
-							precol = f"`⚽{regex.group()}`"
+							precol = f"`âš½{regex.group()}`"
 					if "' +" in notes:
 						regex = re.search(r"\d+\'\s\+\d+",notes)
 						notes = notes.replace(regex.group(),"")
-						precol= f"`⚽{regex.group()}`"
+						precol= f"`âš½{regex.group()}`"
 					if len(notes) < 6:
 						notes = ""
 					self.matchlist[comp][h] = {"timenow":precol,"midcol":midcol,"away":a,
@@ -199,6 +200,10 @@ class Live:
 					if not "scorechannel" in self.bot.config[j]:
 						continue
 					id = self.bot.config[j]["scorechannel"]
+					if id is None:
+						continue
+					else:
+						print(id)
 					sc = self.bot.get_channel(int(id))
 					for i in outlist:
 						if sc is not None:
@@ -328,17 +333,17 @@ class Live:
 		if self.bot.is_owner(ctx.author):
 			x =  self.bot.scorechecker._state
 			if x == "PENDING":
-				v = "✅ Task running."
+				v = "âœ… Task running."
 			elif x == "CANCELLED":
 				e.color = 0xff0000
-				v = "⚠ Task Cancelled."
+				v = "âš  Task Cancelled."
 			elif x == "FINISHED":
 				e.color = 0xff0000
 				self.bot.scorechecker.print_stack()
-				v = "⁉ Task Finished"
+				v = "â‰ Task Finished"
 				z = self.bot.scorechecker.exception()
 			else:
-				v = f"❔ `{self.bot.scorechecker._state}`"
+				v = f"â” `{self.bot.scorechecker._state}`"
 			e.add_field(name="Debug Info",value=v,inline=False)
 			try:
 				e.add_field(name="Exception",value=z,inline=False)
@@ -352,13 +357,13 @@ class Live:
 		""" Turn the Live score channel back on """
 		if not self.scoreson:
 			self.scoreson = True
-			await ctx.send("⚽ Live score channel has been enabled.")
+			await ctx.send("âš½ Live score channel has been enabled.")
 			self.bot.scorechecker = bot.loop.create_task(self.ls())
 		elif self.bot.scorechecker._state == ["FINISHED","CANCELLED"]:
-			await ctx.send(f"⚽ Restarting {self.bot.scorechecker._state} task after exception {self.bot.scorechecker.exception()}.")
+			await ctx.send(f"âš½ Restarting {self.bot.scorechecker._state} task after exception {self.bot.scorechecker.exception()}.")
 			self.bot.scorechecker = bot.loop.create_task(self.ls())
 		else:
-			await ctx.send("⚽ Live score channel already enabled.")
+			await ctx.send("âš½ Live score channel already enabled.")
 			
 	@livescores.command(name="off")
 	@commands.has_permissions(manage_messages=True)
@@ -366,9 +371,9 @@ class Live:
 		""" Turn off the live score channel """
 		if self.scoreson:
 			self.scoreson = False
-			await ctx.send("⚽ Live score channel has been disabled.")
+			await ctx.send("âš½ Live score channel has been disabled.")
 		else:
-			await ctx.send("⚽ Live score channel already disabled.")
+			await ctx.send("âš½ Live score channel already disabled.")
 			
 	@livescores.command(name="unset")
 	@commands.has_permissions(manage_channels=True)
@@ -435,13 +440,13 @@ class Live:
 						infotime = "".join(i.xpath('.//span[2]/i/span/text()'))
 						infotime = infotime.replace('Booked at ','')
 						infotime = infotime.replace('mins','\'')
-						infos = infos.replace('sp-c-booking-card sp-c-booking-card--rotate sp-c-booking-card--yellow gs-u-ml','\💛')
-						infos = infos.replace('booking-card booking-card--rotate booking-card--red gel-ml','\🔴')
+						infos = infos.replace('sp-c-booking-card sp-c-booking-card--rotate sp-c-booking-card--yellow gs-u-ml','\ðŸ’›')
+						infos = infos.replace('booking-card booking-card--rotate booking-card--red gel-ml','\ðŸ”´')
 						subinfo = i.xpath('.//span[3]/span//text()')
 						subbed = subinfo[1] if subinfo else ""
 						subtime = subinfo[3].strip() if subinfo else ""
 						if subbed:
-							subbed = f"\♻ {subbed} {subtime}"
+							subbed = f"\â™» {subbed} {subtime}"
 						if infos:
 							if subbed:
 								thisplayer = f"**{player}** ({infos}{infotime}, {subbed})"
@@ -547,7 +552,7 @@ class Live:
 					e.add_field(name=f"{home} scorers",value=homegoals,inline=False)
 				if awaygoals:
 					e.add_field(name=f"{away} scorers",value=awaygoals,inline=False)
-				e.set_footer(text=f"⚽ {comp}: {time}")
+				e.set_footer(text=f"âš½ {comp}: {time}")
 				await ctx.send(embed=e)
 			
 def setup(bot):
