@@ -44,11 +44,40 @@ class Meta:
 		mc = self.bot.config[str(ctx.guild.id)]['mod']['channel']
 		mc = self.bot.get_channel(mc)
 		if ctx.channel == mc:
-			await ctx.send("🚫 'Clean' has been disabled for the moderator channel.",delete_after=10)
+			await ctx.send("ðŸš« 'Clean' has been disabled for the moderator channel.",delete_after=10)
 		else:
 			deleted = await ctx.channel.purge(limit=number, check=is_me)
 			s = "s" if len(deleted) > 1 else ""
-			await ctx.send(f'♻️ {ctx.author.mention}: Deleted {len(deleted)} bot and command messages{s}',delete_after=10)
+			await ctx.send(f'â™»ï¸ {ctx.author.mention}: Deleted {len(deleted)} bot and command messages{s}',delete_after=10)
+	
+	@commands.command()
+	async def source(self, ctx, *, command: str = None):
+		"""Displays my full source code or for a specific command.
+		To display the source code of a subcommand you can separate it by
+		periods, e.g. tag.create for the create subcommand of the tag command
+		or by spaces.
+		"""
+		source_url = 'https://github.com/Painezor/Toonbot'
+		if command is None:
+			return await ctx.send(source_url)
+
+		obj = self.bot.get_command(command.replace('.', ' '))
+		if obj is None:
+			return await ctx.send('Could not find command.')
+
+		# since we found the command we're looking for, presumably anyway, let's
+		# try to access the code itself
+		src = obj.callback.__code__
+		lines, firstlineno = inspect.getsourcelines(src)
+		if not obj.callback.__module__.startswith('discord'):
+			# not a built-in command
+			location = os.path.relpath(src.co_filename).replace('\\', '/')
+		else:
+			location = obj.callback.__module__.replace('.', '/') + '.py'
+			source_url = 'https://github.com/Painezor/Toonbot'
+
+		final_url = f'<{source_url}/blob/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>'
+		await ctx.send(final_url)
 	
 	@commands.command()
 	@commands.is_owner()
