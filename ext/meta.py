@@ -36,6 +36,37 @@ class Meta:
 		self.bot = bot
 	
 	@commands.command()
+	@commands.has_permissions(manage_guild=True)
+	async def disable(self, ctx, *, command: str):
+		"""Disables a command for this server."""
+		command = command.lower()
+		if command in ('enable', 'disable'):
+			return await ctx.send('Cannot disable that command.')
+		cmds = [i.name for i in list(self.bot.commands)]
+		if command not in cmds:
+			return await ctx.send('I do not have this command registered.')
+		guild_id = ctx.guild.id
+		entries = self.config.get(guild_id, {})
+		entries[command] = True
+		await self.config.put(guild_id, entries)
+		await ctx.send('"%s" command disabled in this server.' % command)
+
+	@commands.command()
+	@commands.has_permissions(manage_guild=True)
+	async def enable(self, ctx, *, command: str):
+		"""Enables a command for this server."""
+		command = command.lower()
+		guild_id = ctx.guild.id
+		entries = self.config.get(guild_id, {})
+		try:
+			entries.pop(command)
+		except KeyError:
+			await ctx.send('The command does not exist or is not disabled.')
+		else:
+			await self.config.put(guild_id, entries)
+			await ctx.send(f'"{command}" command enabled in this server.')
+	
+	@commands.command()
 	@commands.has_permissions(manage_messages=True)
 	async def clean(self,ctx,number : int = 100):
 		""" Deletes my messages from last x in channel"""
