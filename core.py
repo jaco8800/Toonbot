@@ -12,9 +12,9 @@ import sys
 
 load = [	
 	'ext.admin','ext.fixtures','ext.fun','ext.google','ext.images','ext.info',
-	'ext.meta','ext.mod','ext.mtb','ext.nufc','ext.permissions','ext.quotes',
+	'ext.meta','ext.mod','ext.mtb','ext.nufc','ext.quotes',
 	'ext.radio','ext.reactions','ext.scores', 'ext.sidebar',
-	'ext.teams','ext.twitter','ext.transfers',	'ext.wiki',
+	'ext.teams','ext.twitter','ext.transfers',	'ext.wiki', 
 	'ext.tables'
 ]
 					
