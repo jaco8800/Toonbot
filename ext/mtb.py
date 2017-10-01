@@ -1,352 +1,284 @@
-from prawcore.exceptions import RequestException
-import praw
-
-import json
-import asyncio
-
-import aiohttp
-from aiohttp import ServerDisconnectedError
-from lxml import html
-
+import discord,os,datetime,re,asyncio,copy,unicodedata,inspect,psutil,sys
+from discord.ext.commands.cooldowns import BucketType
+from collections import OrderedDict, deque, Counter
 from discord.ext import commands
-import discord
-import datetime
 
-class MatchThreads:
-	""" MatchThread functions """
+class TimeParser:
+	def __init__(self, argument):
+		compiled = re.compile(r"(?:(?P<hours>\d+)h)?(?:(?P<minutes>\d+)m)?(?:(?P<seconds>\d+)s)?")
+		self.original = argument
+		try:
+			self.seconds = int(argument)
+		except ValueError as e:
+			match = compiled.match(argument)
+			if match is None or not match.group(0):
+				raise commands.BadArgument('Failed to parse time.') from e
+			self.seconds = 0
+			hours = match.group('hours')
+			if hours is not None:
+				self.seconds += int(hours) * 3600
+			minutes = match.group('minutes')
+			if minutes is not None:
+				self.seconds += int(minutes) * 60
+			seconds = match.group('seconds')
+			if seconds is not None:
+				self.seconds += int(seconds)
+		if self.seconds < 0:
+			raise commands.BadArgument('I don\'t do negative time.')
+
+		if self.seconds > 604800: # 7 days
+			raise commands.BadArgument('> Implying I\'ll still be online in a week.')
+			
+class Meta:
+	"""Commands for utilities related to the Bot itself."""
 	def __init__(self, bot):
 		self.bot = bot
-		self.stopmatchthread = False
-		self.subreddit = "NUFC"
-		self.ko = ""
-		self.postat = ""
-		self.scheduler = True
-		self.schedtask = self.bot.loop.create_task(self.mt_scheduler())
 	
-	def __unload(self):
-		self.schedtask.cancel()
-		self.scheduler = False
+	@commands.command()
+	@commands.has_permissions(manage_guild=True)
+	async def disable(self, ctx, *, command: str):
+		"""Disables a command for this server."""
+		command = command.lower()
+		if command in ('enable', 'disable'):
+			return await ctx.send('Cannot disable that command.')
+		cmds = [i.name for i in list(self.bot.commands)]
+		if command not in cmds:
+			return await ctx.send('I do not have this command registered.')
+		guild_id = ctx.guild.id
+		entries = self.config.get(guild_id, {})
+		entries[command] = True
+		await self.config.put(guild_id, entries)
+		await ctx.send('"%s" command disabled in this server.' % command)
+
+	@commands.command()
+	@commands.has_permissions(manage_guild=True)
+	async def enable(self, ctx, *, command: str):
+		"""Enables a command for this server."""
+		command = command.lower()
+		guild_id = ctx.guild.id
+		entries = self.config.get(guild_id, {})
+		try:
+			entries.pop(command)
+		except KeyError:
+			await ctx.send('The command does not exist or is not disabled.')
+		else:
+			await self.config.put(guild_id, entries)
+			await ctx.send(f'"{command}" command enabled in this server.')
 	
 	@commands.command()
 	@commands.has_permissions(manage_messages=True)
-	async def schedoff(self,ctx):
-		self.scheduler = False
-		await ctx.send(f"Match thread scheduler disabled.")
+	async def clean(self,ctx,number : int = 100):
+		""" Deletes my messages from last x in channel"""
+		def is_me(m):
+			return m.author.id == self.bot.user.id or m.content[0] in self.bot.command_prefix
+		mc = self.bot.config[str(ctx.guild.id)]['mod']['channel']
+		mc = self.bot.get_channel(mc)
+		if ctx.channel == mc:
+			await ctx.send("ðŸš« 'Clean' has been disabled for the moderator channel.",delete_after=10)
+		else:
+			deleted = await ctx.channel.purge(limit=number, check=is_me)
+			s = "s" if len(deleted) > 1 else ""
+			await ctx.send(f'â™»ï¸ {ctx.author.mention}: Deleted {len(deleted)} bot and command messages{s}',delete_after=10)
+	
+	@commands.command()
+	async def source(self, ctx, *, command: str = None):
+		"""Displays my full source code or for a specific command.
+		To display the source code of a subcommand you can separate it by
+		periods, e.g. tag.create for the create subcommand of the tag command
+		or by spaces.
+		"""
+		source_url = 'https://github.com/Painezor/Toonbot'
+		if command is None:
+			return await ctx.send(source_url)
+
+		obj = self.bot.get_command(command.replace('.', ' '))
+		if obj is None:
+			return await ctx.send('Could not find command.')
+
+		# since we found the command we're looking for, presumably anyway, let's
+		# try to access the code itself
+		src = obj.callback.__code__
+		lines, firstlineno = inspect.getsourcelines(src)
+		if not obj.callback.__module__.startswith('discord'):
+			# not a built-in command
+			location = os.path.relpath(src.co_filename).replace('\\', '/')
+		else:
+			location = obj.callback.__module__.replace('.', '/') + '.py'
+			source_url = 'https://github.com/Painezor/Toonbot'
+
+		final_url = f'<{source_url}/blob/master/{location}#L{firstlineno}-L{firstlineno + len(lines) - 1}>'
+		await ctx.send(final_url)
+	
+	@commands.command()
+	@commands.is_owner()
+	async def version(self,ctx):
+		""" Get Python version """
+		await ctx.send(sys.version)
+	
+	@commands.command()
+	async def hello(self,ctx):
+		"""Say hello."""
+		await ctx.send(f"Hi {ctx.author.mention}, I'm {ctx.me.display_name}, Painezor coded me to do some shit. Type !help to see my commands.")
+
+	@commands.command(aliases=['reminder','remind','remindme'])
+	async def timer(self, ctx, time : TimeParser, *, message=''):
+		"""Reminds you of something after a certain amount of time.
+		The time can optionally be specified with units such as 'h'
+		for hours, 'm' for minutes and 's' for seconds. If no unit
+		is given then it is assumed to be seconds. You can also combine
+		multiple units together, e.g. 2h4m10s.
+		"""
+
+		reminder = None
+		completed = None
+		message = message.replace('@everyone', '@\u200beveryone').replace('@here', '@\u200bhere')
+		
+		human_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=time.seconds)
+		human_time = formats.human_timedelta(human_time)
+		
+		if not message:
+			reminder = f"Sound {ctx.author.mention}, I'll give you a shout in {human_time.replace(' ago', '')} seconds"
+			completed = f"Here, {ctx.author.mention}. You asked is to remind you about summit"
+		else:
+			reminder = f"Areet {ctx.author.mention}, I'll give you a shout about '{message}' in {human_time.replace(' ago', '')}"
+			completed = f"Here {ctx.author.mention}, ya asked me to remind you about '{message}' mate"
+				
+		await ctx.send(reminder)
+		await asyncio.sleep(time.seconds)
+		await ctx.send(completed)
+
+	@timer.error
+	async def timer_error(self, error, ctx):
+		if type(error) is commands.BadArgument:
+			await ctx.send(str(error))
+
+	async def say_permissions(self, ctx, member, channel):
+		permissions = channel.permissions_for(member)
+		await formats.entry_to_code(ctx, permissions)
+
+	@commands.command(aliases=['setavatar'])
+	@commands.is_owner()
+	async def picture(self,ctx,newpic : str):
+		""" Change the bot's avatar """
+		async with self.bot.session.get(newpic) as resp:
+			if resp.status != 200:
+				await ctx.send(f"HTTP Error: Status Code {resp.status}")
+				return None
+			profileimg = await resp.read()
+			await self.bot.user.edit(avatar=profileimg)
 		
 	@commands.command()
-	@commands.has_permissions(manage_messages=True)
-	async def schedon(self,ctx):
-		self.scheduler = True
-		await ctx.send(f"Match thread scheduler enabled.")
+	@commands.has_permissions(manage_roles=True)
+	@commands.bot_has_permissions(manage_roles=True)
+	async def permissions(self, ctx, *, member : discord.Member = None):
+		"""Shows a member's permissions."""
+		if member is None:
+			member = ctx.author
+		permissions = ctx.channel.permissions_for(member)
+		permissions = "\n".join([f"{i[0]} : {i[1]}" for i in permissions])
+		await ctx.send(f"```py\n{permissions}```")
+		
 		
 	@commands.command()
-	async def checkmtb(self,ctx):
-		await ctx.send(f"Scheduled for {self.postat}... hopefully.")
+	@commands.has_permissions(manage_roles=True)
+	@commands.bot_has_permissions(manage_roles=True)
+	async def botpermissions(self, ctx):
+		"""Shows the bot's permissions.
+		This is a good way of checking if the bot has the permissions needed
+		to execute the commands it wants to execute.
+		To execute this command you must have Manage Roles permissions or
+		have the Bot Admin role. You cannot use this in private messages.
+		"""
+		channel = ctx.channel
+		member = ctx.me
+		await self.say_permissions(ctx, member, channel)
 		
-	async def mt_scheduler(self):
-		""" This is the bit that determines when to run a match thread """
-		while self.scheduler:
-			# Scrape the next kickoff date & time from the fixtures list on r/NUFC
-			async with self.bot.session.get("https://www.reddit.com/r/NUFC/") as resp: 
-				if resp.status != 200:
-					return "Error: {resp.status}","Error {resp.status}"
-				tree = html.fromstring(await resp.text())
-				fixture = tree.xpath('.//div[@class="titlebox"]//div[@class="md"]//li[5]//table/tbody/tr[1]/td[1]//text()')[-1]
-				next = datetime.datetime.strptime(fixture,'%a %d %b %H:%M').replace(year=datetime.datetime.now().year)
-				if not next:
-					return "No matches found","No matches found"
-					await asyncio.sleep(86400) # sleep for a day.
-				now = datetime.datetime.now()
-				self.ko = next - now
-				self.postat = self.ko - datetime.timedelta(minutes=15)
-				# Calculate when to post the next match thread
-				sleepuntil = (self.postat.days * 86400) + self.postat.seconds
-				print(f"Sleeping MT Bot for {sleepuntil} seconds")
-				await asyncio.sleep(sleepuntil) # Sleep bot until then.
-				await self.bot.loop.create_task(self.automt())
-				await asyncio.sleep(180)
-				
-	async def automt(self):
-		""" This is the bit that does the match thread. """
-		print("Auto MTB accessed\n-----")
-		modch = self.bot.get_channel(306552425144385536)
-		async with self.bot.session.get("http://www.bbc.co.uk/sport/football/teams/newcastle-united/scores-fixtures") as resp:
-			if resp.status != 200:
-				await modch.send(":no_entry_sign: Match Thread Bot Aborted: HTTP Error: attempting to access game listings. {resp.url} returned status {resp.status}")
-				return
-			tree = html.fromstring(await resp.text())
-			link = tree.xpath(".//a[contains(@class,'sp-c-fixture')]/@href")[-1]
-			link = f"http://bbc.co.uk{link}"
-		prematch = "Not found"
-		async with self.bot.session.get("https://www.reddit.com/r/NUFC/") as resp:
-			if resp.status != 200:
-				await modch.send(content=f"HTTP Error accessing https://www.reddit.com/r/NUFC/ : {resp.status}",delete_after=5)
-			else:
-				tree = html.fromstring(await resp.text())
-				for i in tree.xpath(".//p[@class='title']/a"):
-					title = "".join(i.xpath('.//text()'))
-					if "match" not in title.lower():
-						continue
-					if not title.lower().startswith("pre"):
-						continue
-					else:
-						prematch = "".join(i.xpath('.//@href'))
-						break
+	@commands.command()
+	@commands.has_permissions(manage_nicknames=True)
+	async def name(self,ctx,*,newname: str):
+		""" Rename the bot """
+		await ctx.me.edit(nick=newname)
 		
+	@commands.command()
+	@commands.is_owner()
+	async def game(self,ctx,*,game):
+		""" Change what the bot is playing """
+		await self.bot.change_presence(game=discord.Game(name=game))
+
+	async def on_socket_response(self, msg):
+		self.bot.socket_stats[msg.get('t')] += 1
+
+	@commands.command()
+	@commands.is_owner()
+	async def commandstats(self,ctx):
+		p = commands.Paginator()
+		counter = self.bot.commands_used
+		width = len(max(counter, key=len))
+		total = sum(counter.values())
+
+		fmt = '{0:<{width}}: {1}'
+		p.add_line(fmt.format('Total', total, width=width))
+		for key, count in counter.most_common():
+			p.add_line(fmt.format(key, count, width=width))
+
+		for page in p.pages:
+			await ctx.send(page)
+
+	@commands.command()
+	@commands.is_owner()
+	async def socketstats(self,ctx):
+		delta = datetime.datetime.utcnow() - self.bot.uptime
+		minutes = delta.total_seconds() / 60
+		total = sum(self.bot.socket_stats.values())
+		cpm = total / minutes
+
+		fmt = '%s socket events observed (%.2f/minute):\n%s'
+		await ctx.send(fmt % (total, cpm, self.bot.socket_stats))
+
+	def get_bot_uptime(self):
+		delta = datetime.datetime.utcnow() - self.bot.uptime
+		h, remainder = divmod(int(delta.total_seconds()), 3600)
+		m, s = divmod(remainder, 60)
+		d, h = divmod(h, 24)
+
+		fmt = f'{h}h {m}m {s}s'
+		if d:
+			fmt = f'{d}d {fmt}'
+
+		return fmt
+
+	@commands.command(aliases=['botstats',"uptime"])
+	async def about(self,ctx):
+		"""Tells you information about the bot itself."""
+		e = discord.Embed(colour = 0x111111,timestamp = self.bot.user.created_at)
+
+		owner = self.bot.get_user((await self.bot.application_info()).owner.id)
+		e.set_author(name=f"Owner: {owner}", icon_url=owner.avatar_url)
 		
-		async with self.bot.session.get(link) as resp:
-			if resp.status != 200:
-				await modch.send(f"HTTP Error attempting to retrieve {link}: {resp.status}. Match thread cancelled.")
-				return
-			tree = html.fromstring(await resp.text())
-			if "/live/" in link:
-				ko 	= "".join(tree.xpath('//div[@class="fixture_date-time-wrapper"]/time/text()')).title()
-				ko = f'{ko}\n\n'
-				try:
-					kotime = tree.xpath('//span[@class="fixture__number fixture__number--time"]/text()')[0]
-					ko = f"[🕒](#icon-clock) **Kickoff**: {kotime} on {ko}"
-				except IndexError:
-					ko = f"[🕒](#icon-clock) **Kickoff**: {self.ko}"
-				print(f"A: {ko}")
-				home = tree.xpath('//span[@class="fixture__team-name fixture__team-name--home"]//abbr/@title')[0]
-				away = tree.xpath('//span[@class="fixture__team-name fixture__team-name--away"]//abbr/@title')[0]
-
-			else:
-				ko 	= "".join(tree.xpath('//div[@class="fixture_date-time-wrapper"]/time/text()')).title()
-				ko = f'{ko}\n\n'
-				try:
-					kotime = tree.xpath('//span[@class="fixture__number fixture__number--time"]/text()')[0]
-					ko = f"[🕒](#icon-clock) **Kickoff**: {kotime} on {ko}"
-				except IndexError:
-					ko = f"[🕒](#icon-clock) **Kickoff**: {ko}"
-				teams = tree.xpath('//div[@class="fixture__wrapper"]//abbr/@title')
-				home = teams[0]
-				away = teams[1]
-			try:
-				tvlink = tv = f"http://www.livesoccertv.com/teams/england/{self.bot.teams[home]['bbcname']}/"
-			except KeyError:
-				tv = ""
-			if tv != "":
-				tv = ""
-				async with self.bot.session.get(tvlink) as resp:
-					if resp.status != 200:
-						pass
-					else:
-						btree = html.fromstring(await resp.text())
-						for i in btree.xpath(".//table[@class='schedules'][1]//tr"):
-							if away in "".join(i.xpath('.//td[5]//text()')).strip():
-								fnd = i.xpath('.//td[6]//a/@href')[-1]
-								fnd = f"http://www.livesoccertv.com/{fnd}"
-								tv = f"[📺](#icon-tv)[Television Coverage]({fnd})\n\n"
-			hreddit = self.bot.teams[home]['subreddit']
-			hicon = self.bot.teams[home]['icon']
-			areddit = self.bot.teams[away]['subreddit']
-			aicon = self.bot.teams[away]['icon']
-			venue = f"[{self.bot.teams[home]['stadium']}]({self.bot.teams[home]['stadlink']})"
-			ground = f"[🥅](#icon-net) **Venue**: {venue}\n\n"
-			archive = "[Match Thread Archive](https://www.reddit.com/r/NUFC/wiki/archive)\n\n"
-			print("E")
-			try:
-				ref  = tree.xpath('//dd[@class="description-list__description"]/text()[1]')[0]
-				ref = f"[ℹ](#icon-whistle) **Referee**: {ref}\n\n"
-			except IndexError:
-				ref = ""
-	
-		# Update loop.
-		async def update(prematch):
-			print("Loop.")
-			try:
-				async with self.bot.session.get(link) as resp:
-					if resp.status != 200:
-						return "skip","skip","skip"
-					tree = html.fromstring(await resp.text())
-			except:
-				return "skip","skiP","skip"
-			players	 = tree.xpath('//ul[@class="list-ui list-ui--top-no-border gel-pica"][1]/li')
-			homex = players[:11]
-			awayx = players[11:]
-			hgoals = "".join(tree.xpath('.//ul[contains(@class,"fixture__scorers")][1]//text()'))
-			if hgoals != "":
-				hgoals = f"{hicon}[⚽](#icon-ball) {hgoals}\n\n"
-			agoals = "".join(tree.xpath('.//ul[contains(@class,"fixture__scorers")][2]//text()'))
-			if agoals != "":
-				agoals = f"{aicon}[⚽](#icon-ball) {agoals}\n\n"
-			goals = f"{hgoals}{agoals}".replace(" minutes","")
-			score = " - ".join(tree.xpath("//section[@class='fixture fixture--live-session-header']//span[@class='fixture__block']//text()")[0:2])
-			if score == "":
-				score = "v"
-			if len(tree.xpath('//dd[@class="description-list__description"]/text()')) == 2:
-				attenda  = tree.xpath('//dd[@class="description-list__description"]/text()')[1]
-				attenda = f'**Attendance**: {attenda}\n\n'
-			else:
-				attenda = "**Attendance**: Not announced yet\n\n"
-			async def parse_players(inputlist):
-				out = []
-				for i in inputlist:
-					player = i.xpath('.//span[2]/abbr/span/text()')[0]
-					infos  = "".join(i.xpath('.//span[2]/i/@class'))
-					infos  = "".join(i.xpath('.//span[2]/i/@class'))
-					infotime = "".join(i.xpath('.//span[2]/i/span/text()'))
-					infotime = infotime.replace('Booked at ','')
-					infotime = infotime.replace('mins','\'')
-					infos = infos.replace('sp-c-booking-card sp-c-booking-card--rotate sp-c-booking-card--yellow gs-u-ml','\💛')
-					infos = infos.replace('booking-card booking-card--rotate booking-card--red gel-ml','\🔴')
-					subinfo = i.xpath('.//span[3]/span//text()')
-					subbed = subinfo[1] if subinfo else ""
-					subtime = subinfo[3].strip() if subinfo else ""
-					if subbed:
-						subbed = f"\♻ {subbed} {subtime}"
-					if infos:
-						if subbed:
-							thisplayer = f"**{player}** ({infos}{infotime}, {subbed})"
-						else:
-							thisplayer = f"**{player}** ({infos}{infotime})"
-					else:
-						if subbed:
-							thisplayer = f"**{player}** ({subbed})"
-						else:
-							thisplayer = f"**{player}**"
-					out.append(thisplayer)
-				return out
-			homexi = await parse_players(homex)
-			awayxi = await parse_players(awayx)
-			
-			subs = tree.xpath('//ul[@class="gs-o-list-ui gs-o-list-ui--top-no-border gel-pica"][2]/li/span[2]/abbr/span/text()')
-			sublen = int(len(subs)/2)
-
-			# Get substitutes.
-			homesubs = [f"*{i}*" for i in subs[:sublen]]
-			homesubs = ", ".join(homesubs)
-			
-			awaysubs = [f"*{i}*" for i in subs[sublen:]]
-			awaysubs = ", ".join(awaysubs)
-				
-			statlookup = tree.xpath("//dl[contains(@class,'percentage-row')]")
-			stats = f"\n{home}|v|{away}\n:--|:--:|--:\n"
-			for i in statlookup:
-				stat = "".join(i.xpath('.//dt/text()'))
-				dd1 = "".join(i.xpath('.//dd[1]/span[2]/text()'))
-				dd2 = "".join(i.xpath('.//dd[2]/span[2]/text()'))
-				statline = f"{dd1} | {stat} | {dd2}\n"
-				stats += statline
-			stats += "\n"
-			dsc = f"[](#icon-discord)[Come join us on Discord](https://discord.gg/RtbyUQTV)\n\n\n\n"	
-			headerline = f"# {hicon} [{home}]({hreddit}) {score} [{away}]({areddit}) {aicon}\n\n"
-			if prematch == "Not found":
-				pass
-			else:
-				prematch = f"[Pre-Match Thread]({prematch})\n\n"
-			quickstats = f"{ko}{ground}{ref}{attenda}{prematch}{tv}{archive}"
-			quickstats += "[📻 Radio Commentary](https://www.nufc.co.uk/liveAudio.html)\n\n---\n\n"
-			lineups = f"{hicon} XI: {homexi}\n\nSubs: *{homesubs}*\n\n{aicon} XI: {awayxi}\n\nSubs: *{awaysubs}*\n\n"
-			threadname = f"Match Thread: {home} v {away}"
-			bbcheader = f"##MATCH UPDATES (COURTESY OF [](#icon-bbc)[BBC]({link}))\n\n"
-
-			toptext = headerline+quickstats+lineups+goals+stats+dsc+bbcheader
-			ticker = tree.xpath(".//div[@class='lx-stream__feed']/article")
-			return toptext,threadname,ticker
+		# statistics
+		total_members = sum(len(s.members) for s in self.bot.guilds)
+		total_online  = sum(1 for m in self.bot.get_all_members() if m.status != discord.Status.offline)
+		voice = sum(len(g.text_channels) for g in self.bot.guilds)
+		text = sum(len(g.voice_channels) for g in self.bot.guilds)
+		memory_usage = psutil.Process().memory_full_info().uss / 1024**2
 		
-		print("Trying to run update function.")
-		# Generate Reddit post
-		toptext,threadname,ticker = await update(prematch)
+		members = f"{total_members} Members\n{total_online} Online\n{len(self.bot.users)} unique"
+		e.add_field(name='Members', value=members)
+		e.add_field(name='Channels', value=f'{text + voice} total\n{text} text\n{voice} voice')
+		e.add_field(name='Servers', value=len(self.bot.guilds))
+		e.add_field(name='Uptime', value=self.get_bot_uptime(),inline=False)
+		e.add_field(name='Commands Run', value=sum(self.bot.commands_used.values()))
+		e.add_field(name='Memory Usage', value='{:.2f} MiB'.format(memory_usage))
+		e.add_field(name='Python Version',value=sys.version)
+		e.set_footer(text='Made with discord.py', icon_url='http://i.imgur.com/5BFecvA.png')
 
-		post = await self.bot.loop.run_in_executor(None,self.makepost,threadname,toptext)
-
-		await modch.send(content=post.url)
-		tickids = []
-		ticker = ""
-		while self.stopmatchthread == False:
-			stop = False
-			toptext,threadname,newticks = await update(prematch)
-			if toptext == "skip":
-				pass
-			else:
-				newticks.reverse()
-				for i in newticks:
-					tickid = "".join(i.xpath("./@id"))
-					if tickid in tickids:
-						continue
-					tickids.append(tickid)
-					header = "".join(i.xpath('.//h3//text()')).strip()
-					time = "".join(i.xpath('.//time//span[2]//text()')).strip()
-					content = "".join(i.xpath('.//p//text()'))
-					content = content.replace(home,f"{hicon} {home}")
-					content = content.replace(away,f"{aicon} {away}").strip()
-					if "Goal!" in header:
-						if "Own Goal" in content:
-							header = f"[⚽](#icon-OG) **OWN GOAL** "
-						else:
-							header = f"[⚽](#icon-ball) **GOAL** "
-						time = f"**{time}**"
-						content = f"**{content.replace('Goal! ','').strip()}**"
-					if "Substitution" in header:
-						header = f"[🔄](#icon-sub) **SUB**"
-						team,subs = content.replace("Substitution, ","").split('.',1)
-						on,off = subs.split('replaces')
-						content = f"**{team} [🔺](#icon-up){on} [🔻](#icon-down){off}**"
-						time = f"**{time}**"
-					if content.lower().startswith("corner"):
-						content = f"[](#icon-corner) {content}"
-					if "Booking" in header:
-						header = f"[YC](#icon-yellow)"
-					if "Dismissal" in header:
-						if "second yellow" in content.lower():
-							header = f"[OFF!](#icon-2yellow) **RED**"
-						else:
-							header = f"[OFF!](#icon-red) **RED**"
-						content = f"**{content}**"
-					if "injury" in content.lower() or "injured" in content.lower():
-						content = f"[🚑](#icon-injury) {content}"
-					if "Full Time" in header:
-						stop = True
-						score = " - ".join(tree.xpath("//section[@class='fixture fixture--live-session-header']//span[@class='fixture__block']//text()")[0:2])
-						ticker += f"# FULL TIME: {time} {hicon} [{home}]({hreddit}) {score} [{away}]({areddit}) {aicon}\n\n"
-					else:
-						ticker += f"{header} {time}: {content}\n\n"
-				if newticks:
-					newcontent = toptext+ticker
-					upd = await self.bot.loop.run_in_executor(None,self.editpost,post,newcontent)
-				if stop:
-					# Final update when the match thread ends.
-					newcontent = toptext+ticker
-					upd = await self.bot.loop.run_in_executor(None,self.editpost,post,newcontent)
-					await modch.send("Match thread ended, submitting post-match thread.")
-					
-					print(f"Headerline: {headerline}")
-					print(f"matchurl: {post.url}")
-					print(f"quickstats: {quickstats}")
-					print(f"lineups: {lineups}")
-					print(f"goals: {goals}")
-					print(f"stats: {stats}")
-					print(f"home: {home}")
-					print(f"away: {away}")
-					print(f"score: {score}")
-					# Post post-match thread.
-					matchurl = f"[Match Thread]({post.url})\n\n"
-
-					posttext = headerline+quickstats+matchurl+lineups+goals+stats
-					threadname = f"Post-Match Thread: {home} {score} {away}"
-					post = await self.bot.loop.run_in_executor(None,self.makepost,threadname,posttext)
-					await modch.send(content=post.url)
-					print("Loop Concluded")
-					self.stopmatchthread = True
-					break
-			await asyncio.sleep(120)
-	
-	def makepost(self,threadname,toptext):
-		print("Entered MakePost")
-		try:
-			post = self.bot.reddit.subreddit(f"{self.subreddit}").submit(threadname,selftext=toptext)
-		except RequestException:
-			self.makepost(threadname,toptext)
-		return post
-		
-	def editpost(self,post,newcontent):
-		try:
-			post.edit(newcontent)
-		except:
-			self.editpost(post,newcontent)
-		return
+		m = await ctx.send(embed=e)
+		await m.edit(content=" ",embed=e)
+		time = f"{str((m.edited_at - m.created_at).microseconds)[:3]}ms"
+		e.add_field(name="Ping",value=time)
+		await m.edit(content=None,embed=e)
 		
 def setup(bot):
-	bot.add_cog(MatchThreads(bot))
+	bot.commands_used = Counter()
+	bot.socket_stats = Counter()
+	bot.add_cog(Meta(bot))
