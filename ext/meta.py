@@ -2,7 +2,6 @@ import discord,os,datetime,re,asyncio,copy,unicodedata,inspect,psutil,sys
 from discord.ext.commands.cooldowns import BucketType
 from collections import OrderedDict, deque, Counter
 from discord.ext import commands
-from .utils import formats
 
 class TimeParser:
 	def __init__(self, argument):
