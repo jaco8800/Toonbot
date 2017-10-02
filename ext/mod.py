@@ -204,10 +204,22 @@ class Mod:
 	@commands.bot_has_permissions(ban_members=True)
 	async def unban(self,ctx,*,who):
 		""" Unbans a user from the server """
-		un,discrim = who.split('#')
-		for i in await ctx.guild.bans():
-			if i.name == un:
-				if i.discriminator == discrim:
+		try:
+			un,discrim = who.split('#')
+			for i in await ctx.guild.bans():
+				if i.name == un:
+					if i.discriminator == discrim:
+						try:
+							await self.bot.http.unban(i.user.id, ctx.guild.id)
+						except discord.Forbidden:
+							await ctx.send("⛔ I can\'t unban that user.")
+						except discord.HTTPException:
+							await ctx.send("❔ Unban failed.")
+						else:
+							await ctx.send(f"🆗 {who} was unbanned")
+		except ValueError:
+			for i in await ctx.guild.bans():
+				if i.name == who:
 					try:
 						await self.bot.http.unban(i.user.id, ctx.guild.id)
 					except discord.Forbidden:
@@ -216,7 +228,7 @@ class Mod:
 						await ctx.send("❔ Unban failed.")
 					else:
 						await ctx.send(f"🆗 {who} was unbanned")
-	
+		
 	@commands.command(aliases=['bans'])
 	async def banlist(self,ctx):
 		""" Show the banlist for the server """
