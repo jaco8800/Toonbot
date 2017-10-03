@@ -25,10 +25,15 @@ handler = logging.FileHandler(filename='Rewrite.log',
 							  encoding='utf-8', mode='w')
 log.addHandler(handler)
 
-prefix = ['$','!','`','.','-','?']
+def get_pre(bot,message):
+	pref = bot.config[f"{message.guild.id}"]["prefix"]
+	if not pref:
+		pref = ['$','!','`','.','-','?']
+	return pref
+
 description = "Football lookup bot by Painezor#8489"
 help_attrs = dict(hidden=True)
-bot = commands.Bot(command_prefix=prefix, description=description,
+bot = commands.Bot(command_prefix=commands.when_mentioned_or(get_pre()), description=description,
 				   pm_help=None, help_attrs=help_attrs)
 
 # Errors and invalid commands outputs
