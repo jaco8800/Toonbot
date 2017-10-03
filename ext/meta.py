@@ -42,9 +42,49 @@ class Meta:
 				sort_keys=True,indent=4, separators=(',',':'))
 	
 	@commands.group()
-	async def prefixes(self,ctx):
+	async def prefix(self,ctx):
 		""" Lists the bot prefixes for this server """
-		prefixes = self.bot.config[f"{ctx.guild.id}"]
+		prefixes = self.bot.config[f"{ctx.guild.id}"]["prefix"]
+		await ctx.send(f"Command prefixes for this server: {prefixes}")
+		
+	@prefix.command(name="add")
+	@commands.has_permissions(manage_guild=True)
+	async def _add(self,ctx,*,prefix):
+		""" Add a bot prefix for the server """
+		prefixes = self.bot.config[f"{ctx.guild.id}"]["prefix"]
+		if not prefixes:
+			self.bot.config[f"{ctx.guild.id}"]["prefix"] = ['$','!','`','.','-','?',prefix]
+			await self._save()
+			return await ctx.send(f"{prefix} added to prefix list.")
+		if prefix in prefixes:
+			return await ctx.send("Already in prefix list")
+		else:
+			self.bot.config[f"{ctx.guild.id}"]["prefix"].append(prefix)
+			await self._save()
+			return await ctx.send(f"{prefix} added to prefix list.")
+			
+	@prefix.command(name="remove",aliases=["del"])
+	@commands.has_permissions(manage_guild=True)
+	async def _remove(self,ctx,*,prefix):
+		""" Add a bot prefix for the server """
+		prefixes = self.bot.config[f"{ctx.guild.id}"]["prefix"]
+		if not prefixes:
+			return await ctx.send(f"Unable to find existing prefix list.")
+		if prefix in prefixes:
+			self.bot.config[f"{ctx.guild.id}"]["prefix"].remove(prefix)
+			await self._save()
+			return await ctx.send(f"{prefix} removed from prefix list.")
+		else:
+			return await ctx.send(f"{prefix} was not in the existing prefix list.")
+	
+	
+	@prefix.command()
+	@commands.has_permissions(manage_guild=True)
+	async def default(self,ctx):
+		""" Resets the guild's prefixes to default ['$','!','`','.','-','?']"""
+		self.bot.config[f"{ctx.guild.id}"]["prefix"] = ['$','!','`','.','-','?']
+		await self._save()
+		await ctx.send("Server prefixes reset to ['$','!','`','.','-','?']")
 	
 	@commands.command()
 	@commands.has_permissions(manage_guild=True)
