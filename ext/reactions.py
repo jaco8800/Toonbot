@@ -20,6 +20,18 @@ reactdict = {
 			"yedlin":["🇺🇸"],
 			}
 
+# Enable/disable			  
+class GlobalChecks:
+	def __init__(self, bot):
+		self.bot = bot
+		self.bot.add_check(self.disabledcmds)
+
+	async def disabledcmds(self, ctx):
+		if str(ctx.command) in self.bot.config[f"{ctx.guild.id}"]["disabled"]:
+			await ctx.send(f"Sorry, the {ctx.command} command has been disabled on this server.",delete_after=5)
+		else:
+			return True
+			
 class Reactions:
 	def __init__(self, bot):
 		self.bot = bot
@@ -71,11 +83,12 @@ class Reactions:
 		c = m.content.lower()
 		# ignore bot messages
 		if m.author.bot:
-			if c.startswith("/r/") or c.startswith("r/"):
+			if c.startswith("NUFC: "):
 				lf = f"New item in modqueue: <http://www.reddit.com/{m.content}>"
 				await m.channel.send(lf)
 				await m.delete()
 			return
+		# if command disabled.
 		if m.author.id in self.bot.ignored:
 			return
 		# Emoji reactions
@@ -108,3 +121,4 @@ class Reactions:
 		
 def setup(bot):
 	bot.add_cog(Reactions(bot))
+	bot.add_cog(GlobalChecks(bot))
