@@ -2,6 +2,7 @@ import discord,os,datetime,re,asyncio,copy,unicodedata,inspect,psutil,sys
 from discord.ext.commands.cooldowns import BucketType
 from collections import OrderedDict, deque, Counter
 from discord.ext import commands
+import json
 
 class TimeParser:
 	def __init__(self, argument):
@@ -24,7 +25,7 @@ class TimeParser:
 			if seconds is not None:
 				self.seconds += int(seconds)
 		if self.seconds < 0:
-			raise commands.BadArgument('I don\'t do negative time.')
+			raise commands.BadArgument("That was in the past mate...")
 
 		if self.seconds > 604800: # 7 days
 			raise commands.BadArgument('> Implying I\'ll still be online in a week.')
@@ -34,6 +35,17 @@ class Meta:
 	def __init__(self, bot):
 		self.bot = bot
 	
+	async def _save(self):
+		with await self.bot.configlock:
+			with open('config.json',"w",encoding='utf-8') as f:
+				json.dump(self.bot.config,f,ensure_ascii=True,
+				sort_keys=True,indent=4, separators=(',',':'))
+	
+	@commands.group()
+	async def prefixes(self,ctx):
+		""" Lists the bot prefixes for this server """
+		prefixes = self.bot.config[f"{ctx.guild.id}"]
+	
 	@commands.command()
 	@commands.has_permissions(manage_guild=True)
 	async def disable(self, ctx, *, command: str):
@@ -41,29 +53,29 @@ class Meta:
 		command = command.lower()
 		if command in ('enable', 'disable'):
 			return await ctx.send('Cannot disable that command.')
-		cmds = [i.name for i in list(self.bot.commands)]
-		if command not in cmds:
-			return await ctx.send('I do not have this command registered.')
-		guild_id = ctx.guild.id
-		entries = self.config.get(guild_id, {})
-		entries[command] = True
-		await self.config.put(guild_id, entries)
-		await ctx.send('"%s" command disabled in this server.' % command)
+		if command not in [i.name for i in list(self.bot.commands)]:
+			return await ctx.send('Unrecognised command name.')
+		if "disabled" in self.bot.config[f"{ctx.guild.id}"]:
+			self.bot.config[f"{ctx.guild.id}"]["disabled"].append(command)
+		else:
+			self.bot.config[f"{ctx.guild.id}"]["disabled"] = [command]
+		await self._save()
+		await ctx.send(f'The "{command}" command has been disabled for this server.')
 
 	@commands.command()
 	@commands.has_permissions(manage_guild=True)
 	async def enable(self, ctx, *, command: str):
 		"""Enables a command for this server."""
 		command = command.lower()
-		guild_id = ctx.guild.id
-		entries = self.config.get(guild_id, {})
+		if command not in [i.name for i in list(self.bot.commands)]:
+			return await ctx.send('Unrecognised command name.')
 		try:
-			entries.pop(command)
-		except KeyError:
+			self.bot.config[f"{ctx.guild.id}"]["disabled"].remove(command)
+		except ValueError:
 			await ctx.send('The command does not exist or is not disabled.')
 		else:
-			await self.config.put(guild_id, entries)
-			await ctx.send(f'"{command}" command enabled in this server.')
+			await ctx.send(f'"The {command}" command has been enabled for this server.')
+			await self._save()
 	
 	@commands.command()
 	@commands.has_permissions(manage_messages=True)
