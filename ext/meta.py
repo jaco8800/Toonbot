@@ -44,8 +44,13 @@ class Meta:
 	@commands.group()
 	async def prefix(self,ctx):
 		""" Lists the bot prefixes for this server """
-		prefixes = self.bot.config[f"{ctx.guild.id}"]["prefix"]
-		await ctx.send(f"Command prefixes for this server: {prefixes}")
+		try:
+			prefixes = self.bot.config[f"{ctx.guild.id}"]["prefix"]
+		except KeyError:
+			self.bot.config[f"{ctx.guild.id}"]["prefix"] = ['$','!','`','.','-','?']
+			await self._save()
+			prefixes = self.bot.config[f"{ctx.guild.id}"]["prefix"]
+		await ctx.send(f"Command prefixes for this server: ```{' '.join(prefixes)}```")
 		
 	@prefix.command(name="add")
 	@commands.has_permissions(manage_guild=True)
@@ -102,6 +107,15 @@ class Meta:
 		await self._save()
 		await ctx.send(f'The "{command}" command has been disabled for this server.')
 
+	@commands.command()
+	@commands.has_permissions(manage_guild=True)
+	async def disabled(self,ctx):
+		disabledcmds = self.bot.config[f"{ctx.guild.id}"]["disabled"]
+		if disabledcmds:
+			await ctx.send(f"Disabled commands for this server: ```{disabledcmds}```")
+		else:
+			await ctx.send("No commands are currently disabled on this server")
+			
 	@commands.command()
 	@commands.has_permissions(manage_guild=True)
 	async def enable(self, ctx, *, command: str):
