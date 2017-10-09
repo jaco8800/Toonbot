@@ -92,7 +92,7 @@ if __name__ == '__main__':
 		bot.leagues = json.load(f)
 	with open('config.json') as f:
 		bot.config = json.load(f)
-	with open('compsnew.json') as f:
+	with open('comps.json') as f:
 		bot.comps = json.load(f)
 	bot.configlock = asyncio.Lock()
 	bot.run(bot.credentials['bot']['token'])
