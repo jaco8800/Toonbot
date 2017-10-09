@@ -23,7 +23,7 @@ class Fixtures:
 	async def save_comps(self):
 		print("Save_comps accessed")
 		with await self.bot.configlock:
-			with open('compsnew.json',"w",encoding='utf-8') as f:
+			with open('comps.json',"w",encoding='utf-8') as f:
 				json.dump(self.bot.comps,f,ensure_ascii=True,
 				sort_keys=True,indent=4, separators=(',',':'))
 
