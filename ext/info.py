@@ -39,6 +39,7 @@ class Info:
 		e.add_field(name='Servers', value='%s shared' % shared,inline=True)
 		e.add_field(name='Voice', value=voice,inline=True)
 		e.add_field(name="Is bot?",value=member.bot,inline=True)
+		e.add_field(name="Source",value="https://github.com/Painezor/Toonbot",inline=True)
 		if member.game is not None:
 			e.add_field(name='Game',value=member.game,inline=True)
 		e.add_field(name='Created at', value=member.created_at,inline=True)
