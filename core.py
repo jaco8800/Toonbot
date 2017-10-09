@@ -14,8 +14,8 @@ load = [
 	'ext.admin','ext.fixtures','ext.fun','ext.google','ext.images','ext.info',
 	'ext.meta','ext.mod','ext.mtb','ext.nufc','ext.quotes',
 	'ext.radio','ext.reactions','ext.scores', 'ext.sidebar',
-	'ext.teams','ext.twitter','ext.transfers',	'ext.wiki', 
-	'ext.tables'
+	'ext.tables','ext.teams','ext.twitter','ext.transfers',	
+	'ext.tv','ext.wiki'
 ]
 					
 # Enable Logging
