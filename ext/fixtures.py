@@ -86,75 +86,81 @@ class Fixtures:
 		driver.quit()
 	
 	@commands.command()
-	async def tv(self,ctx,*,team = "Newcastle United"):
+	async def tv(self,ctx,*,team = None):
 		""" Lookup next televised games for a team """
-		found = []
-		for i,j in self.bot.teams.items():
-			if team.lower() in i.lower():
-				found.append(i)
-		if len(found) == 0:
-			await ctx.send(f"No teams found matching {team}")
-			return
-		elif len(found) > 1:
-			found = [i for i,j in found]
-			await ctx.send(f"Multiple teams found, please be more specific ({','.join(found)})")
-			return
-		else:
-			e = discord.Embed()
-			e.set_author(name=found[0])
-			print(found[0])
-			team = found[0]
-		td = self.bot.teams[team]
-		url = f'http://www.livesoccertv.com/teams/england/{td["bbcname"]}'
-		async with self.bot.session.get(url) as resp:
-			if resp.status != 200:
-				await ctx.send(f"🚫 {resp.url} returned {resp.status}")
+		with ctx.typing():
+			if not team:
+				if ctx.guild.id = 332159889587699712:
+					team = "Newcastle United"
+				else:
+					return await ctx.send("Please provide a team name for me to search for.")
+			found = []
+			for i,j in self.bot.teams.items():
+				if team.lower() in i.lower():
+					found.append(i)
+			if len(found) == 0:
+				await ctx.send(f"No teams found matching {team}")
 				return
-			tree = html.fromstring(await resp.text())
-		tvlist = []
-		for i in tree.xpath(".//table[@class='schedules'][1]//tr"):
-			# Discard finished games.
-			isdone = "".join(i.xpath('.//td[@class="livecell"]//text()'))
-			if isdone in ["FT","Repeat"]:
-				continue
-			if "".join(i.xpath('.//td[@class="compcell"]/a/text()')) in "PL2":
-				continue
-			match = "".join(i.xpath('.//td[5]//text()')).strip()
-			if "vs" not in match:
-				continue
-			ml = i.xpath('.//td[6]//a/text()')
-			ml = [x for x in ml if x != "nufcTV" and x.strip() != ""]
-			if ml == []:
-				continue
+			elif len(found) > 1:
+				found = [i for i,j in found]
+				await ctx.send(f"Multiple teams found, please be more specific ({','.join(found)})")
+				return
 			else:
-				ml = ", ".join(ml)
-			date = "".join(i.xpath('.//td[@class="datecell"]//span/text()'))
-			date = date.strip()
-			time = "".join(i.xpath('.//td[@class="timecell"]//span/text()'))
-			time = time.strip()
-			# Correct TimeZone offset.
-			time = datetime.datetime.strptime(time,'%H:%M')+ datetime.timedelta(hours=5)
-			time = datetime.datetime.strftime(time,'%H:%M')
-			try:
-				link = i.xpath('.//td[6]//a/@href')[-1]
-			except IndexError:
-				continue
-			dt = f"`{date} {time}`"
-			lnk= f"http://www.livesoccertv.com/{link}"
-			tvlist.append((match,f'{dt} [{ml}]({lnk})'))
-		e = discord.Embed()
-		e.color = 0x034f76
-		e.title = "LiveSoccerTV.com"
-		if len(tvlist) > 0:
-			e.description = f"Upcoming Televised fixtures for {team}"
-		else:
-			e.description = f"None on this page, check the website."
-		e.url = f"{resp.url}"
-		e.set_thumbnail(url='http://cdn.livesoccertv.com/images/logo55.png')
-		e.set_footer(text="UK times.")
-		for i,j in tvlist:
-			e.add_field(name=i,value=j,inline=False)
-		await ctx.send(embed=e)
+				e = discord.Embed()
+				e.set_author(name=found[0])
+				print(found[0])
+				team = found[0]
+			td = self.bot.teams[team]
+			url = f'http://www.livesoccertv.com/teams/england/{td["bbcname"]}'
+			async with self.bot.session.get(url) as resp:
+				if resp.status != 200:
+					await ctx.send(f"🚫 {resp.url} returned {resp.status}")
+					return
+				tree = html.fromstring(await resp.text())
+			tvlist = []
+			for i in tree.xpath(".//table[@class='schedules'][1]//tr"):
+				# Discard finished games.
+				isdone = "".join(i.xpath('.//td[@class="livecell"]//text()'))
+				if isdone in ["FT","Repeat"]:
+					continue
+				if "".join(i.xpath('.//td[@class="compcell"]/a/text()')) in "PL2":
+					continue
+				match = "".join(i.xpath('.//td[5]//text()')).strip()
+				if "vs" not in match:
+					continue
+				ml = i.xpath('.//td[6]//a/text()')
+				ml = [x for x in ml if x != "nufcTV" and x.strip() != ""]
+				if ml == []:
+					continue
+				else:
+					ml = ", ".join(ml)
+				date = "".join(i.xpath('.//td[@class="datecell"]//span/text()'))
+				date = date.strip()
+				time = "".join(i.xpath('.//td[@class="timecell"]//span/text()'))
+				time = time.strip()
+				# Correct TimeZone offset.
+				time = datetime.datetime.strptime(time,'%H:%M')+ datetime.timedelta(hours=5)
+				time = datetime.datetime.strftime(time,'%H:%M')
+				try:
+					link = i.xpath('.//td[6]//a/@href')[-1]
+				except IndexError:
+					continue
+				dt = f"`{date} {time}`"
+				lnk= f"http://www.livesoccertv.com/{link}"
+				tvlist.append((match,f'{dt} [{ml}]({lnk})'))
+			e = discord.Embed()
+			e.color = 0x034f76
+			e.title = "LiveSoccerTV.com"
+			if len(tvlist) > 0:
+				e.description = f"Upcoming Televised fixtures for {team}"
+			else:
+				e.description = f"None on this page, check the website."
+			e.url = f"{resp.url}"
+			e.set_thumbnail(url='http://cdn.livesoccertv.com/images/logo55.png')
+			e.set_footer(text="UK times.")
+			for i,j in tvlist:
+				e.add_field(name=i,value=j,inline=False)
+			await ctx.send(embed=e)
 	
 	@commands.command(aliases=["sc","topscorers"])
 	async def scorers(self,ctx,*,qry = "Newcastle Utd"):
@@ -179,8 +185,8 @@ class Fixtures:
 		
 	@commands.command(aliases=["fx"],invoke_without_command=True)
 	async def fixtures(self,ctx,*,qry="Newcastle Utd"):
-		""" Displays fixtures for the last year for a team.
-			Navigate with reactions.
+		""" Grab a team's results history from flashscore.
+			Navigate using discord reactions.
 		"""
 		m = await ctx.send(f"Fixtures: Searching for {qry}, please wait...")
 		with ctx.typing():
@@ -317,6 +323,8 @@ class Fixtures:
 					continue	
 				g = "".join(i.xpath('.//td[5]/text()'))
 				if g == "0":
+					continue
+				if not g:
 					continue
 				l = "".join(i.xpath('.//td[contains(@class,"player-name")]/a/@href'))
 				if g in scorerdict.keys():
