@@ -276,7 +276,7 @@ class Live:
 		# Save for next comparison.
 		self.matchcache = flattened
 	
-	@commands.command(invoke_without_command=True)
+	@commands.group(invoke_without_command=True)
 	async def scores(self,ctx,*,league="Premier League"):
 		""" Get the current scores from a league (default is Premier League)"""
 		outcomps = []
@@ -307,7 +307,15 @@ class Live:
 				await ctx.send(i)
 		else:
 			await ctx.send(f"Couldn't find scores for {league}")
-				
+	
+	@scores.command(name="reload")
+	@commands.has_permissions(manage_guild=True)
+	async def _reload(self,ctx):
+		self.bot.scorechecker.cancel()
+		self.bot.scorechecker = self.bot.loop.create_task(self.ls())
+		await ctx.send("Restarted score tracker.")
+		
+	
 	@commands.group(invoke_without_command=True,aliases=["ls"])
 	@commands.is_owner()
 	async def livescores(self,ctx):
