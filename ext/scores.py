@@ -498,7 +498,7 @@ class Live:
 		""" Get the current stats for a team's game (default is Newcastle) """
 		with ctx.typing():
 			link = await self.fetch_game(ctx,team)
-			print(link)
+			m = await ctx.send(f"Found match: <{link}>, parsing...")
 			async with self.bot.session.get(link) as resp:
 				if resp.status != 200:
 					await ctx.send(content=f"HTTP Error accessing this match's page: Code {resp.status}")
@@ -560,6 +560,7 @@ class Live:
 				if awaygoals:
 					e.add_field(name=f"{away} scorers",value=awaygoals,inline=False)
 				e.set_footer(text=f"âš½ {comp}: {time}")
+				await m.delete()
 				await ctx.send(embed=e)
 			
 def setup(bot):
