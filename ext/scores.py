@@ -402,12 +402,18 @@ class Live:
 			if resp.status != 200:
 				await m.edit(content=f"HTTP Error: {resp.status}")
 				return None
-			tree = html.fromstring(await resp.text())
-			node = tree.xpath(f".//li/a[.//abbr[contains(@title,'{team}')]]")
-			if len(node) == 0:
+			# We convert to lower case because fuck "USA".
+			mystr = await resp.text()
+			mystr = mystr.lower()
+			tree = html.fromstring(mystr)
+			
+			# Search for the team in links.
+			node = tree.xpath(f".//li/a[.//abbr[contains(@title,'{team.lower()}')]]")
+			if not node:
 				await ctx.send("Could not find specified team")
 				return
 			elif len(node) > 0:
+				# If multiple nodes we just take the first cunt.
 				node = node[0]
 			return f"http://www.bbc.co.uk{node.xpath('./@href')[0]}"
 
@@ -492,6 +498,7 @@ class Live:
 		""" Get the current stats for a team's game (default is Newcastle) """
 		with ctx.typing():
 			link = await self.fetch_game(ctx,team)
+			print(link)
 			async with self.bot.session.get(link) as resp:
 				if resp.status != 200:
 					await ctx.send(content=f"HTTP Error accessing this match's page: Code {resp.status}")
