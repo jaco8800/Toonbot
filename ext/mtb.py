@@ -207,7 +207,9 @@ class MatchThreads:
 				return out
 				
 			homexi = await parse_players(homex)
+			homexi = ", ".join(homexi)
 			awayxi = await parse_players(awayx)
+			awayxi = ", ".join(awayxi)
 			
 			subs = tree.xpath('//ul[@class="gs-o-list-ui gs-o-list-ui--top-no-border gel-pica"][2]/li/span[2]/abbr/span/text()')
 			sublen = int(len(subs)/2)
