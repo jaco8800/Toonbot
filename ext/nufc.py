@@ -8,6 +8,8 @@ class NUFC:
 	""" NUFC.com player profiles """
 	def __init__(self, bot):
 		self.bot = bot
+		print("FUCKING RELOAD.")
+		self.bot.streams = []
 	
 	def nufccheck(ctx):
 		if ctx.guild:
@@ -31,6 +33,35 @@ class NUFC:
 		players = tree.xpath('.//div[@class="player-card"]/a/@href')
 		pictures = tree.xpath('.//div[@class="player-card"]/a/div/div/figure/img/@src')
 		return (players,pictures)
+	
+	@commands.group(invoke_without_command=True,aliases=["stream"])
+	async def streams(self,ctx):
+		""" List all streams for the match added by users. """
+		if not self.bot.streams:
+			await ctx.send("Nobody has added any streams yet.")
+		output = "**Streams: **\n"
+		for c,v in enumerate(self.bot.streams,1):
+			output += f"{c}: {v}\n"
+		await ctx.send(output)
+		
+	@streams.command(name="add")
+	async def stream_add(self,ctx,*,stream):
+		if "http" in stream:
+			stream = f"<{stream}>"
+		self.bot.streams.append(f"{stream} (added by {ctx.author.name})")
+		await ctx.send(f"Added {stream} to stream list.")
+		
+	@streams.command(name="del")
+	async def stream_del(self,ctx,*,num:int):
+		num = num+1
+		removed = self.bot.streams.pop(num)
+		await ctx.send(f"{removed} removed from streams list.")
+		
+	@streams.command(name="clear")
+	@commands.has_permissions(manage_guild=True)
+	async def stream_clear(self,ctx):
+		self.bot.streams = []
+		await ctx.send("Streams cleared.")
 	
 	@commands.command()
 	async def gherkin(self,ctx):
