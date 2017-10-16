@@ -103,9 +103,9 @@ class MatchThreads:
 				ko = f'{ko}\n\n'
 				try:
 					kotime = tree.xpath('//span[@class="fixture__number fixture__number--time"]/text()')[0]
-					ko = f"[ðŸ•’](#icon-clock) **Kickoff**: {kotime} on {ko}"
+					ko = f"[🕒](#icon-clock) **Kickoff**: {kotime} on {ko}"
 				except IndexError:
-					ko = f"[ðŸ•’](#icon-clock) **Kickoff**: {self.ko}"
+					ko = f"[🕒](#icon-clock) **Kickoff**: {self.ko}"
 				print(f"A: {ko}")
 				home = tree.xpath('//span[@class="fixture__team-name fixture__team-name--home"]//abbr/@title')[0]
 				away = tree.xpath('//span[@class="fixture__team-name fixture__team-name--away"]//abbr/@title')[0]
@@ -115,9 +115,9 @@ class MatchThreads:
 				ko = f'{ko}\n\n'
 				try:
 					kotime = tree.xpath('//span[@class="fixture__number fixture__number--time"]/text()')[0]
-					ko = f"[ðŸ•’](#icon-clock) **Kickoff**: {kotime} on {ko}"
+					ko = f"[🕒](#icon-clock) **Kickoff**: {kotime} on {ko}"
 				except IndexError:
-					ko = f"[ðŸ•’](#icon-clock) **Kickoff**: {ko}"
+					ko = f"[🕒](#icon-clock) **Kickoff**: {ko}"
 				teams = tree.xpath('//div[@class="fixture__wrapper"]//abbr/@title')
 				home = teams[0]
 				away = teams[1]
@@ -136,17 +136,17 @@ class MatchThreads:
 							if away in "".join(i.xpath('.//td[5]//text()')).strip():
 								fnd = i.xpath('.//td[6]//a/@href')[-1]
 								fnd = f"http://www.livesoccertv.com/{fnd}"
-								tv = f"[ðŸ“º](#icon-tv)[Television Coverage]({fnd})\n\n"
+								tv = f"[📺](#icon-tv)[Television Coverage]({fnd})\n\n"
 			hreddit = self.bot.teams[home]['subreddit']
 			hicon = self.bot.teams[home]['icon']
 			areddit = self.bot.teams[away]['subreddit']
 			aicon = self.bot.teams[away]['icon']
 			venue = f"[{self.bot.teams[home]['stadium']}]({self.bot.teams[home]['stadlink']})"
-			ground = f"[ðŸ¥…](#icon-net) **Venue**: {venue}\n\n"
+			ground = f"[🥅](#icon-net) **Venue**: {venue}\n\n"
 			archive = "[Match Thread Archive](https://www.reddit.com/r/NUFC/wiki/archive)\n\n"
 			try:
 				ref  = tree.xpath('//dd[@class="description-list__description"]/text()[1]')[0]
-				ref = f"[â„¹](#icon-whistle) **Referee**: {ref}\n\n"
+				ref = f"[ℹ](#icon-whistle) **Referee**: {ref}\n\n"
 			except IndexError:
 				ref = ""
 	
@@ -164,10 +164,10 @@ class MatchThreads:
 			awayx = tree.xpath('.//ul[@class="gs-o-list-ui gs-o-list-ui--top-no-border gel-pica"][1]/li')[11:]
 			hgoals = "".join(tree.xpath('.//ul[contains(@class,"fixture__scorers")][1]//text()'))
 			if hgoals != "":
-				hgoals = f"{hicon}[âš½](#icon-ball) {hgoals}\n\n"
+				hgoals = f"{hicon}[⚽](#icon-ball) {hgoals}\n\n"
 			agoals = "".join(tree.xpath('.//ul[contains(@class,"fixture__scorers")][2]//text()'))
 			if agoals != "":
-				agoals = f"{aicon}[âš½](#icon-ball) {agoals}\n\n"
+				agoals = f"{aicon}[⚽](#icon-ball) {agoals}\n\n"
 			goals = f"{hgoals}{agoals}".replace(" minutes","")
 			score = " - ".join(tree.xpath("//section[@class='fixture fixture--live-session-header']//span[@class='fixture__block']//text()")[0:2])
 			if score == "":
@@ -186,13 +186,13 @@ class MatchThreads:
 					infotime = "".join(i.xpath('.//span[2]/i/span/text()'))
 					infotime = infotime.replace('Booked at ','')
 					infotime = infotime.replace('mins','\'')
-					infos = infos.replace('sp-c-booking-card sp-c-booking-card--rotate sp-c-booking-card--yellow gs-u-ml','\ðŸ’›')
-					infos = infos.replace('booking-card booking-card--rotate booking-card--red gel-ml','\ðŸ”´')
+					infos = infos.replace('sp-c-booking-card sp-c-booking-card--rotate sp-c-booking-card--yellow gs-u-ml','💛')
+					infos = infos.replace('booking-card booking-card--rotate booking-card--red gel-ml','🔴')
 					subinfo = i.xpath('.//span[3]/span//text()')
 					subbed = subinfo[1] if subinfo else ""
 					subtime = subinfo[3].strip() if subinfo else ""
 					if subbed:
-						subbed = f"\â™» {subbed} {subtime}"
+						subbed = f"♻ {subbed} {subtime}"
 					if infos:
 						if subbed:
 							thisplayer = f"**{player}** ({infos}{infotime}, {subbed})"
@@ -237,7 +237,7 @@ class MatchThreads:
 			else:
 				prematch = f"[Pre-Match Thread]({prematch})\n\n"
 			quickstats = f"{ko}{ground}{ref}{attenda}{prematch}{tv}{archive}"
-			quickstats += "[ðŸ“» Radio Commentary](https://www.nufc.co.uk/liveAudio.html)\n\n---\n\n"
+			quickstats += "[📻 Radio Commentary](https://www.nufc.co.uk/liveAudio.html)\n\n---\n\n"
 			lineups = f"{hicon} XI: {homexi}\n\nSubs: {homesubs}\n\n{aicon} XI: {awayxi}\n\nSubs: {awaysubs}\n\n"
 			threadname = f"Match Thread: {home} v {away}"
 			bbcheader = f"##MATCH UPDATES (COURTESY OF [](#icon-bbc)[BBC]({link}))\n\n"
@@ -274,16 +274,16 @@ class MatchThreads:
 					content = content.replace(away,f"{aicon} {away}").strip()
 					if "Goal!" in header:
 						if "Own Goal" in content:
-							header = f"[âš½](#icon-OG) **OWN GOAL** "
+							header = f"[⚽](#icon-OG) **OWN GOAL** "
 						else:
-							header = f"[âš½](#icon-ball) **GOAL** "
+							header = f"[⚽](#icon-ball) **GOAL** "
 						time = f"**{time}**"
 						content = f"**{content.replace('Goal! ','').strip()}**"
 					if "Substitution" in header:
-						header = f"[ðŸ”„](#icon-sub) **SUB**"
+						header = f"[🔄](#icon-sub) **SUB**"
 						team,subs = content.replace("Substitution, ","").split('.',1)
 						on,off = subs.split('replaces')
-						content = f"**{team} [ðŸ”º](#icon-up){on} [ðŸ”»](#icon-down){off}**"
+						content = f"**{team} [🔺](#icon-up){on} [🔻](#icon-down){off}**"
 						time = f"**{time}**"
 					if content.lower().startswith("corner"):
 						content = f"[](#icon-corner) {content}"
@@ -296,7 +296,7 @@ class MatchThreads:
 							header = f"[OFF!](#icon-red) **RED**"
 						content = f"**{content}**"
 					if "injury" in content.lower() or "injured" in content.lower():
-						content = f"[ðŸš‘](#icon-injury) {content}"
+						content = f"[🚑](#icon-injury) {content}"
 					if "Full Time" in header:
 						stop = True
 						score = " - ".join(tree.xpath("//section[@class='fixture fixture--live-session-header']//span[@class='fixture__block']//text()")[0:2])
