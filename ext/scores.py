@@ -219,7 +219,8 @@ class Live:
 		for (k,v) in self.matchlist.items():
 			for i in ["Champions League","Premier League"]:
 				if i in k: # Change to Premier League
-					filtered.update({k:v})
+					if "Women" not in k:
+						filtered.update({k:v})
 		
 		# Flatten for iteration.
 		flattened = {}
@@ -231,7 +232,7 @@ class Live:
 			self.matchcache = flattened
 			return
 		
-		# End early.
+		# End early if no changes.
 		if flattened == self.matchcache:
 			return
 		
@@ -247,7 +248,7 @@ class Live:
 						e.title = "Goal"
 						e.color = 0x00ff00
 					async with self.bot.session.get(f"http://www.bbc.co.uk{flattened[i]['url']}") as resp:
-						tree = html.fromstring(await resp.text())
+						tree = html.fromstring(await resp.text()) # pls fix?
 						hg = "".join(tree.xpath('.//ul[contains(@class,"fixture__scorers")][1]//text()'))
 						hg = hg.replace("minutes","").replace(" )",")")
 						ag = "".join(tree.xpath('.//ul[contains(@class,"fixture__scorers")][2]//text()'))
@@ -267,6 +268,7 @@ class Live:
 					if "Welsh" in flattened[i]['league']:
 						self.matchcache = flattened
 						return
+					self.matchcache = flattened
 					print(f"Dispatched Ticker Event: {i} {flattened[i]['midcol']} {flattened[i]['away']}\n{hg}\n{ag}")
 					await out.send(embed=e)
 			except KeyError:
