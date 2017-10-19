@@ -100,7 +100,7 @@ class Misc:
 	@commands.bot_has_permissions(kick_members=True)
 	async def roulette(self,ctx):
 		""" Russian Roulette """
-		x = ["click.","click.","click.","click.","click.","🔫 BANG!"]
+		x = ["click.","click.","click.","click.","click.","ðŸ”« BANG!"]
 		outcome = random.choice(x)
 		await ctx.send(outcome)
 		if outcome == "BANG!":
@@ -120,40 +120,40 @@ class Misc:
 		try:
 			await ctx.author.kick(reason=f"Used {ctx.invoked_with}")
 		except discord.Forbidden:
-			await ctx.send("⛔ I can't kick you")
+			await ctx.send("â›” I can't kick you")
 		except discord.HTTPException:
-			await ctx.send('❔ Kicking failed.')
+			await ctx.send('â” Kicking failed.')
 		else:
-			await ctx.send(f"👢 {ctx.author.mention} kicked themself")
+			await ctx.send(f"ðŸ‘¢ {ctx.author.mention} kicked themself")
 			c = self.bot.config[f"{ctx.guild.id}"]["mod"]["channel"]
 			c = self.bot.get_channel(c)
-			await c.send(f"👢 {ctx.author.mention} kicked themself")
+			await c.send(f"ðŸ‘¢ {ctx.author.mention} kicked themself")
 
-	@commands.command(hidden=True)
+	@commands.command(hidden=True,aliases=["bamme"])
 	@commands.guild_only()
 	async def banme(self,ctx):
 		""" Ban yourself. """
 		try:
 			await ctx.author.ban(reason="Used .banme",delete_message_days=0)
 		except discord.Forbidden:
-			await ctx.send("⛔ I can't ban you")
+			await ctx.send("â›” I can't ban you")
 		except discord.HTTPException:
-			await ctx.send("❔ Banning failed.")
+			await ctx.send("â” Banning failed.")
 		else:
-			await ctx.send(f"☠ {ctx.author.mention} banned themself.")
+			await ctx.send(f"â˜  {ctx.author.mention} banned themself.")
 			c = self.bot.config[f"{ctx.guild.id}"]["mod"]["channel"]
 			c = self.bot.get_channel(c)
-			await c.send(f"☠ {ctx.author.mention} banned themself")
+			await c.send(f"â˜  {ctx.author.mention} banned themself")
 	
 	@commands.command(hidden=True)
 	@commands.guild_only()
 	async def triggered(self,ctx):
 		""" WEEE WOO SPECIAL SNOWFLAKE DETECTED """
-		trgmsg = await ctx.send("🚨 🇹 🇷 🇮 🇬 🇬 🇪 🇷  🇼 🇦 🇷 🇳 🇮 🇳 🇬  🚨")
+		trgmsg = await ctx.send("ðŸš¨ ðŸ‡¹ ðŸ‡· ðŸ‡® ðŸ‡¬ ðŸ‡¬ ðŸ‡ª ðŸ‡·  ðŸ‡¼ ðŸ‡¦ ðŸ‡· ðŸ‡³ ðŸ‡® ðŸ‡³ ðŸ‡¬  ðŸš¨")
 		for i in range(5):
-			await trgmsg.edit(content="⚠ 🇹 🇷 🇮 🇬 🇬 🇪 🇷  🇼 🇦 🇷 🇳 🇮 🇳 🇬  ⚠")
+			await trgmsg.edit(content="âš  ðŸ‡¹ ðŸ‡· ðŸ‡® ðŸ‡¬ ðŸ‡¬ ðŸ‡ª ðŸ‡·  ðŸ‡¼ ðŸ‡¦ ðŸ‡· ðŸ‡³ ðŸ‡® ðŸ‡³ ðŸ‡¬  âš ")
 			await asyncio.sleep(1)
-			await trgmsg.edit(content="🚨 🇹 🇷 🇮 🇬 🇬 🇪 🇷  🇼 🇦 🇷 🇳 🇮 🇳 🇬  🚨")
+			await trgmsg.edit(content="ðŸš¨ ðŸ‡¹ ðŸ‡· ðŸ‡® ðŸ‡¬ ðŸ‡¬ ðŸ‡ª ðŸ‡·  ðŸ‡¼ ðŸ‡¦ ðŸ‡· ðŸ‡³ ðŸ‡® ðŸ‡³ ðŸ‡¬  ðŸš¨")
 			await asyncio.sleep(1)
 	
 	@commands.command(hidden=True)
@@ -197,7 +197,7 @@ class Misc:
 		url = f"http://api.urbandictionary.com/v0/define?term={lookup}"
 		async with self.bot.session.get(url) as resp:
 			if resp.status != 200:
-				await ctx.send(f"🚫 HTTP Error, code: {resp.status}")
+				await ctx.send(f"ðŸš« HTTP Error, code: {resp.status}")
 				return
 			json = await resp.json()
 		
@@ -217,17 +217,19 @@ class Misc:
 				e.title=i["word"]
 				e.url=i["permalink"]
 				e.description = i["definition"]
-				e.add_field(name="Example",value=i["example"])
+				e.description = e.description[:2047]
+				if i["example"]:
+					e.add_field(name="Example",value=i["example"])
 				un = ctx.author.display_name
 				ic = "http://pix.iemoji.com/twit33/0056.png"
 				footertext = (f"Page {count} of {len(deflist)} ({un}) |"
-							  f"👍🏻{i['thumbs_up']} 👎🏻{i['thumbs_down']}")
+							  f"ðŸ‘ðŸ»{i['thumbs_up']} ðŸ‘ŽðŸ»{i['thumbs_down']}")
 				e.set_footer(icon_url=ic,text=footertext)
 				embeds.append(e)
 				count += 1
 		elif json["result_type"] == "no_results":
 			e = discord.Embed(color=0xFE3511)
-			e.description = f"🚫 No results found for {lookup}."
+			e.description = f"ðŸš« No results found for {lookup}."
 			embeds.append(e)
 		else:
 			await ctx.send(f'DEBUG: result_type = {json["result_type"]}')
@@ -240,15 +242,15 @@ class Misc:
 		# Add reactions
 		if len(embeds) > 1:
 			if len(embeds) > 2: 
-				await m.add_reaction("⏮")#first
-			await m.add_reaction("◀") #prev
-			await m.add_reaction("▶") #next
+				await m.add_reaction("â®")#first
+			await m.add_reaction("â—€") #prev
+			await m.add_reaction("â–¶") #next
 			if len(embeds) > 2: 
-				await m.add_reaction("⏭") #last
+				await m.add_reaction("â­") #last
 		def check(reaction,user):
 			if reaction.message.id == m.id and user == ctx.author:
 				e = str(reaction.emoji)
-				return e.startswith(('⏮','◀','▶','⏭'))
+				return e.startswith(('â®','â—€','â–¶','â­'))
 		while not self.bot.is_closed():
 			try:
 				wf = "reaction_add"
@@ -257,21 +259,21 @@ class Misc:
 				await m.clear_reactions()
 				break
 			res = res[0]
-			if res.emoji == "⏮": #first
+			if res.emoji == "â®": #first
 				page = 0
-				await m.remove_reaction("⏮",ctx.author)
-			if res.emoji == "◀": #prev
+				await m.remove_reaction("â®",ctx.author)
+			if res.emoji == "â—€": #prev
 				if page > 0:
 					page += -1
-				await m.remove_reaction("◀",ctx.author)
-			if res.emoji == "▶": #next	
+				await m.remove_reaction("â—€",ctx.author)
+			if res.emoji == "â–¶": #next	
 				if page < len(embeds) - 1:
 					page += 1
-				await m.remove_reaction("▶",ctx.author)
-			if res.emoji == "⏭": #last
+				await m.remove_reaction("â–¶",ctx.author)
+			if res.emoji == "â­": #last
 				page = len(embeds) - 1
-				await m.remove_reaction("⏭",ctx.author)
-			if res.emoji == "⏏": #eject:
+				await m.remove_reaction("â­",ctx.author)
+			if res.emoji == "â": #eject:
 				await m.clear_reactions()
 				await m.delete()
 			await m.edit(embed=embeds[page])
@@ -288,7 +290,7 @@ class Misc:
 				return
 			posts = html.fromstring(await resp.text())
 			posts = posts.xpath('.//div[contains(@class, "thing")]')
-			table = [("\💩 r/nufcirclejerk Shitposts of the week roundup."
+			table = [("\ðŸ’© r/nufcirclejerk Shitposts of the week roundup."
 					 "\n\n Score | Link | Direct | Author \n--|--|--|--|")]
 			for i in posts:
 				title = i.xpath(".//a[contains(@class, 'title')]/text()")
@@ -318,7 +320,7 @@ class Misc:
 		await ctx.message.delete()
 		
 		string = "".join([f":regional_indicator_{i.lower()}:" if i.isalpha()
-						else f"{i}⃣" if i.isdigit() else i for i in string])
+						else f"{i}âƒ£" if i.isdigit() else i for i in string])
 		await ctx.send(string)
 	
 def setup(bot):
