@@ -25,8 +25,9 @@ class Live:
 		self.matchcache = {}
     
 	def __unload(self):
-		self.scoreson = False
 		self.bot.scorechecker.cancel()
+		self.scoreson = False
+		
 	
 	# Live Scores task.
 	async def ls(self):
@@ -217,10 +218,8 @@ class Live:
 		# Wanted league is in the dict's keys.
 		filtered = {}
 		for (k,v) in self.matchlist.items():
-			for i in ["Champions League","Premier League"]:
-				if i in k: # Change to Premier League
-					if "Women" not in k:
-						filtered.update({k:v})
+			if any(["Champions League","Premier League"]) in k and not any("Women","Welsh","Russian") in k:
+				filtered.update({k:v})
 		
 		# Flatten for iteration.
 		flattened = {}
@@ -239,6 +238,14 @@ class Live:
 		for i in flattened:
 			try:
 				if not flattened[i]["midcol"] == self.matchcache[i]["midcol"]:
+					
+					# Avoid re-sending by verifying score increase..
+					os = self.matchcache[i]["midcol"].split("-")
+					ns = flattened[i]["midcol"].split("-")
+										
+					if not any([os[0].strip() < ns[0].strip(),os[1].strip() < ns[1].strip()]):
+						return self.matchcache = flattened
+					
 					out = self.bot.get_channel(332163136239173632)
 					e = discord.Embed()
 					if "0 - 0" in flattened[i]['midcol']:
@@ -262,12 +269,6 @@ class Live:
 					if "FT" in flattened[i]['timenow']:
 						e.title = "Full Time"
 						e.color = 	0x00ffff 
-					if "Russian" in flattened[i]['league']:
-						self.matchcache = flattened
-						return
-					if "Welsh" in flattened[i]['league']:
-						self.matchcache = flattened
-						return
 					self.matchcache = flattened
 					print(f"Dispatched Ticker Event: {i} {flattened[i]['midcol']} {flattened[i]['away']}\n{hg}\n{ag}")
 					await out.send(embed=e)
