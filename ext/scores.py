@@ -218,7 +218,7 @@ class Live:
 		# Wanted league is in the dict's keys.
 		filtered = {}
 		for (k,v) in self.matchlist.items():
-			if any(["Champions League","Premier League"]) in k and not any("Women","Welsh","Russian") in k:
+			if any(i in k for i in ["Champions League","Premier League"]) and not any(i in k for i in ["Women","Welsh","Russian"]):
 				filtered.update({k:v})
 		
 		# Flatten for iteration.
@@ -243,7 +243,7 @@ class Live:
 					os = self.matchcache[i]["midcol"].split("-")
 					ns = flattened[i]["midcol"].split("-")
 										
-					if not any([os[0].strip() < ns[0].strip(),os[1].strip() < ns[1].strip()]):
+					if not os[0].strip() < ns[0].strip() and not os[1].strip() < ns[1].strip():
 						self.matchcache = flattened
 						return
 					
