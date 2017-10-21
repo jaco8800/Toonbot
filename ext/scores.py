@@ -244,7 +244,8 @@ class Live:
 					ns = flattened[i]["midcol"].split("-")
 										
 					if not any([os[0].strip() < ns[0].strip(),os[1].strip() < ns[1].strip()]):
-						return self.matchcache = flattened
+						self.matchcache = flattened
+						return
 					
 					out = self.bot.get_channel(332163136239173632)
 					e = discord.Embed()
