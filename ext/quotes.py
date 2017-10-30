@@ -12,7 +12,7 @@ class quotedb:
 	""" Quote Database module """
 	def __init__(self,bot):
 		self.bot = bot
-
+		
 	@commands.group(invoke_without_command=True,aliases=["quotes"])
 	async def quote(self,ctx,*,member:discord.Member = None):
 		""" Show random quote (optionally from specific user). Use ".help quote" to view subcommands. """
@@ -48,6 +48,16 @@ class quotedb:
 		em.set_thumbnail(url="https://discordapp.com/assets/2c21aeda16de354ba5334551a883b481.png")
 		em.set_footer(text=f"📅 {x[4]} (Added by {submitter}) ")
 		await ctx.send(embed=em)
+
+	@quote.command()
+	@commands.is_owner()
+	async def export(self,ctx):
+		c.execute("SELECT rowid, * from quotes")
+		x = c.fetchall()
+		with open("out.txt", "wb") as fp:
+			fp.write("\n".join([f"#{i[0]} @ {i[4]}: <{i[1]}> {i[2]} (Added by: {i[3]})" for i in x]).encode('utf8'))
+			conn.rollback()
+		await ctx.send("Might've worked. Let's find out.",file=discord.File("out.txt","quotes.txt"))
 
 	@quote.command(aliases=["id"])
 	async def get(self,ctx,number):
@@ -158,7 +168,7 @@ class quotedb:
 		await ctx.send(embed=em)
 	
 	@quote.command(name="del")
-	@commands.is_owner()
+	@commands.has_permissions(manage_messages=True)
 	async def _del(self,ctx,id):
 		""" Delete quote by quote ID """
 		if not id.isdigit():
@@ -182,6 +192,7 @@ class quotedb:
 			else:
 				submitter = submitter.display_name
 			channel 	= self.bot.get_channel(x[3])
+			channel = "deleted-channel" if channel is None else channel
 			em = discord.Embed(title=f"{author} in #{channel}",description=x[2],color=0x7289DA)
 			em.set_author(name=f"Quote #{x[0]}",icon_url=av)
 			em.set_thumbnail(url="https://discordapp.com/assets/2c21aeda16de354ba5334551a883b481.png")
