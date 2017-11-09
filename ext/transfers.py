@@ -66,30 +66,27 @@ class Transfers:
 				await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
 				return None
 			tree = html.fromstring(await resp.text())
-			categories = tree.xpath("descendant::div[@class='table-header']/text()")
-			categories = [i.lower() for i in categories]
-			findings = {}
-			for i in categories:
-				# Just give us the number of matches by replacing non-digit characters.
-				length = [int(n) for n in i if n.isdigit()][0]
-				if length:
-					letter = replacelist.pop(0)
-				if "players" in i:
-					findings[letter] = (f"{letter} {length} Players",ctx.invoke(self._player,target=tquery))
-				if "managers" in i:
-					findings[letter] = (f"{letter} {length} Managers",ctx.invoke(self._manager,target=tquery))
-				if "clubs" in i:
-					findings[letter] = (f"{letter} {length} Clubs",ctx.invoke(self._team,target=tquery))
-				if "referees" in i:
-					findings[letter] = (f"{letter} {length} Referees",ctx.invoke(self._ref,target=tquery))
-				if "to competitions" in i:
-					findings[letter] = (f"{letter} {length} Club competitions",ctx.invoke(self._cup,target=tquery))
-				if "international" in i:
-					findings[letter] = (f"{letter} {length} International competitions",ctx.invoke(self._int,target=tquery))
-				if "agent" in i:
-					findings[letter] = (f"{letter} {length} agents",ctx.invoke(self._agent,target=tquery))
-			return findings,query	
-		
+		cats = [i.lower() for i in tree.xpath(".//div[@class='table-header']/text()")]
+		res = {}
+		matches = {
+			"players":{"cat":"Players","func":self._player},
+			"managers":{"cat":"Managers","func":self._manager},
+			"clubs":{"cat":"Clubs","func":self._team},
+			"referees":{"cat":"Referees","func":self._ref},
+			"to competitions":{"cat":"Competitions","func":self._cup},
+			"international":{"cat":"International Competitions","func":self._int},
+			"agent":{"cat":"Agents","func":self._agent}
+		}
+		for i in cats:
+			# Just give us the number of matches by replacing non-digit characters.
+			length = [int(n) for n in i if n.isdigit()][0]
+			if length:
+				letter = replacelist.pop(0)
+				for j in matches:
+					if j in i:
+						res[letter] = (f"{letter} {length} {matches[j]['cat']}",ctx.invoke(matches[j]["func"],target=tquery))
+		return res,query	
+	
 	@commands.group(invoke_without_command=True)
 	async def lookup(self,ctx,*,target:str):
 		""" Perform a database lookup on transfermarkt """
