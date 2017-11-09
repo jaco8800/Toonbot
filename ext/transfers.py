@@ -11,8 +11,8 @@ numdict = {"0":"0⃣","1":"1⃣","2":"2⃣","3":"3⃣","4":"4⃣","5":"5⃣","6"
 indicatordict = {"a":"🇦","b":"🇧","c":"🇨","d":"🇩","e":"🇪","f":"🇫","g":"🇬","h":"🇭","i":"🇮","j":"🇯","k":"🇰","l":"🇱","m":"🇲","n":"🇳","o":"🇴","p":"🇵","q":"🇶","r":"🇷","s":"🇸","t":"🇹","u":"🇺","v":"🇻","w":"🇼","x":"🇽","y":"🇾","z":"🇿"}
 
 def enumereplace(list):
-	for key,value in numdict:
-		list = [x.replace(key,value) for x in list]
+	for key in numdict:
+		list = [x.replace(key,numdict[key]) for x in list]
 	return list
 	
 class Transfers:
@@ -67,29 +67,27 @@ class Transfers:
 				return None
 			tree = html.fromstring(await resp.text())
 			categories = tree.xpath("descendant::div[@class='table-header']/text()")
+			categories = [i.lower() for i in categories]
 			findings = {}
-			for i in range (1,len(categories)+1):
-				if "players" in categories[i-1]:
-					length = [int(n) for n in categories[i-1].split() if n.isdigit()][0]
-					findings[replacelist[i-1]] = (f"{replacelist[i-1]} {length} Players",ctx.invoke(self._player,target=tquery))
-				if "managers" in categories[i-1].lower():
-					length = [int(n) for n in categories[i-1].split() if n.isdigit()][0]
-					findings[replacelist[i-1]] = (f"{replacelist[i-1]} {length} Managers",ctx.invoke(self._manager,target=tquery))
-				if "clubs" in categories[i-1].lower():
-					length = [int(n) for n in categories[i-1].split() if n.isdigit()][0]
-					findings[replacelist[i-1]] = (f"{replacelist[i-1]} {length} Clubs",ctx.invoke(self._team,target=tquery))
-				if "referees" in categories[i-1].lower():
-					length = [int(n) for n in categories[i-1].split() if n.isdigit()][0]
-					findings[replacelist[i-1]] = (f"{replacelist[i-1]} {length} Referees",ctx.invoke(self._ref,target=tquery))
-				if "to competitions" in categories[i-1].lower():
-					length = [int(n) for n in categories[i-1].split() if n.isdigit()][0]
-					findings[replacelist[i-1]] = (f"{replacelist[i-1]} {length} Club competitions",ctx.invoke(self._ref,target=tquery))
-				if "international" in categories[i-1].lower():
-					length = [int(n) for n in categories[i-1].split() if n.isdigit()][0]
-					findings[replacelist[i-1]] = (f"{replacelist[i-1]} {length} International competitions",ctx.invoke(self._int,target=tquery))
-				if "agent" in categories[i-1].lower():
-					length = [int(n) for n in categories[i-1].split() if n.isdigit()][0]
-					findings[replacelist[i-1]] = (f"{replacelist[i-1]} {length} agents",ctx.invoke(self._agent,target=tquery))
+			for i in categories:
+				# Just give us the number of matches by replacing non-digit characters.
+				length = [int(n) for n in i if n.isdigit()][0]
+				if length:
+					letter = replacelist.pop(0)
+				if "players" in i:
+					findings[letter] = (f"{letter} {length} Players",ctx.invoke(self._player,target=tquery))
+				if "managers" in i:
+					findings[letter] = (f"{letter} {length} Managers",ctx.invoke(self._manager,target=tquery))
+				if "clubs" in i:
+					findings[letter] = (f"{letter} {length} Clubs",ctx.invoke(self._team,target=tquery))
+				if "referees" in i:
+					findings[letter] = (f"{letter} {length} Referees",ctx.invoke(self._ref,target=tquery))
+				if "to competitions" in i:
+					findings[letter] = (f"{letter} {length} Club competitions",ctx.invoke(self._cup,target=tquery))
+				if "international" in i:
+					findings[letter] = (f"{letter} {length} International competitions",ctx.invoke(self._int,target=tquery))
+				if "agent" in i:
+					findings[letter] = (f"{letter} {length} agents",ctx.invoke(self._agent,target=tquery))
 			return findings,query	
 		
 	@commands.group(invoke_without_command=True)
@@ -873,11 +871,8 @@ class Transfers:
 					linktogo = None
 					break
 				else:
-					findemoji = [key for key, value in emojidict.items() if value == res.emoji][0] # This code is cancer
-					sorteddict = sorted(emojidict.items(), key=operator.itemgetter(1))
-					linkkey = [y for x,y in enumerate(sorteddict) if y[0] == findemoji] #get index
-					linkkey = linkkey[0][0]
-					linktogo = linklist[int(linkkey)] # get position in dict for id (what an ugly hack)
+					findemoji = [key for key, value in numdict.items() if value == res.emoji][0] # This code is cancer
+					linktogo = linklist[int(findemoji)] # get position in dict for id (what an ugly hack)
 					break
 				em,numfound,linklist = await tlookup(tquery,page)
 				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
@@ -888,13 +883,9 @@ class Transfers:
 		else:
 			linktogo = linklist[0]
 		
-		async with self.bot.session.get(linktogo) as resp: # Get injured players link for specific team [CANCER LEVELS AT CRITICAL MASS]
-			if resp.status != 200:
-				ctx.send(f"HTTP Error trying to access {linktogo}: Code {resp.status}")
-				return None
-			tree = html.fromstring(await resp.text())
-			injurynode = tree.xpath(".//a[text()='Bans & injuries']")[0]
-			link = "http://www.transfermarkt.co.uk{}".format(injurynode.xpath('.//@href')[0])
+		# Switch to actual injuries page.
+		await m.delete()
+		link = linktogo.replace("/startseite/","/sperrenundverletzungen/")
 			
 		async with self.bot.session.get(link) as resp: #Finally get the actual injured players page for the team
 			if resp.status != 200:
@@ -931,7 +922,6 @@ class Transfers:
 					em.add_field(name=f"{player} ({position})",value=f"{type}\nIncident date: {date}\nGames missed: {missed}\n")
 				else:
 					em.add_field(name=f"{player} ({position})",value=f"{type}\nIncident date: {date}\nGames missed: {missed}\nDue back: {dueback}")
-				em.set_thumbnail(url="http:"+picture)
 			if numpages > 1:
 				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"{ctx.author.display_name}: Page {page + 1} of {numpages}")
 		await make_embed(paginated,page)
@@ -1107,29 +1097,23 @@ class Transfers:
 			outtable = tree.xpath('//div[@class="box"][4]/div[@class="responsive-table"]/table/tbody')[0]
 			inplayers = intable.xpath('./tr')
 			outplayers = outtable.xpath('./tr')
-			inlist, outlist = [],[]
-			for player in inplayers:
-				pname = player.xpath('.//td/a[@class="spielprofil_tooltip"]/text()')
-				plink = player.xpath('.//td/a[@class="spielprofil_tooltip"]/@href')
-				plink = "http://www.transfermarkt.co.uk/"+plink[0]
-				ppos = player.xpath('.//tr[2]/td/text()')
-				plage = player.xpath('.//td[3]/text()')
-				flag = player.xpath('.//td[5]/img/@title')
-				ctry = self.getFlags(flag)
-				fee = player.xpath('.//td[7]/a/text()')
-				thisplayer = "{} [{}]({}) ({}): {} ({})".format(ctry[0],pname[0],plink,plage[0],ppos[0],fee[0])
-				inlist.append(thisplayer)
-			for player in outplayers:
-				pname = player.xpath('.//td/a[@class="spielprofil_tooltip"]/text()')
-				plink = player.xpath('.//td/a[@class="spielprofil_tooltip"]/@href')
-				plink = "http://www.transfermarkt.co.uk/"+plink[0]
-				ppos = player.xpath('.//tr[2]/td/text()')
-				plage = player.xpath('.//td[3]/text()')
-				flag = player.xpath('.//td[5]/img/@title')
-				ctry = self.getFlags(flag)
-				fee = player.xpath('.//td[7]/a/text()')
-				thisplayer = "{} [{}]({}) ({}): {} ({})".format(ctry[0],pname[0],plink,plage[0],ppos[0],fee[0])
-				outlist.append(thisplayer)
+			def parseplayers(plist):
+				returnlist = []
+				for i in plist:
+					pname = i.xpath('.//td/a[@class="spielprofil_tooltip"]/text()')
+					plink = i.xpath('.//td/a[@class="spielprofil_tooltip"]/@href')
+					plink = f"http://www.transfermarkt.co.uk/{plink[0]}"
+					ppos = i.xpath('.//tr[2]/td/text()')
+					plage = i.xpath('.//td[3]/text()')
+					flag = i.xpath('.//td[5]/img/@title')
+					ctry = self.getFlags(flag)
+					fee = i.xpath('.//td[7]/a/text()')
+					thisplayer = f"{ctry[0]} [{pname[0]}]({plink}) ({plage[0]}): {ppos[0]} ({fee[0]})"
+					returnlist.append(thisplayer)
+				return returnlist
+			inlist = parseplayers(inplayers)
+			outlist = parseplayers(outplayers)
+
 			lenin = len(inlist)
 			lenout = len(outlist)
 			em = discord.Embed(title="Winter Transfers 2017 for NUFC",url="http://www.transfermarkt.co.uk/newcastle-united/transfers/verein/762/saison_id/2016/pos//detailpos/0/w_s/w/plus/1#zugaenge")
