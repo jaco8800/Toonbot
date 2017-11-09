@@ -7,8 +7,19 @@ import operator
 
 headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36'}
 ctrydict = {"Wales":"gb","England":"gb","Scotland":"gb","Northern Ireland":"gb","Cote d'Ivoire":"ci","Venezuela":"ve","Macedonia":"mk","Kosovo":"xk","Faroe Island":"fo","Trinidad and Tobago":"tt","Congo DR":"cd","Moldova":"md","Korea, South":"kr","Korea, North":"kp", "Bolivia":"bo","Iran":"ir","Hongkong":"hk","Tahiti":"fp","Vietnam":"vn","Chinese Taipei (Taiwan)":"tw","Russia":"ru","N/A":"x","Cape Verde":"cv","American Virgin Islands":"vi","Turks- and Caicosinseln":"tc","Czech Republic":"cz","CSSR":"cz","Neukaledonien":"nc","St. Kitts &Nevis":"kn","Palästina":"ps","Osttimor":"tl","Bosnia-Herzegovina":"ba","Laos":"la","The Gambia":"gm","Botsuana":"bw","St. Louis":"lc","Tanzania":"tz","St. Vincent & Grenadinen":"vc","Cayman-Inseln":"ky","Antigua and Barbuda":"ag","British Virgin Islands":"vg","Mariana Islands":"mp","Sint Maarten":"sx","Federated States of Micronesia":"fm","Netherlands Antilles":"nl"}
-numdict = {"0":"0⃣","1":"1⃣","2":"2⃣","3":"3⃣","4":"4⃣","5":"5⃣","6":"6⃣","7":"7⃣","8":"8⃣","9":"9⃣"}
-indicatordict = {"a":"🇦","b":"🇧","c":"🇨","d":"🇩","e":"🇪","f":"🇫","g":"🇬","h":"🇭","i":"🇮","j":"🇯","k":"🇰","l":"🇱","m":"🇲","n":"🇳","o":"🇴","p":"🇵","q":"🇶","r":"🇷","s":"🇸","t":"🇹","u":"🇺","v":"🇻","w":"🇼","x":"🇽","y":"🇾","z":"🇿"}
+
+numdict = {
+			"0":"0⃣","1":"1⃣","2":"2⃣","3":"3⃣","4":"4⃣",
+			"5":"5⃣","6":"6⃣","7":"7⃣","8":"8⃣","9":"9⃣"
+		}
+
+unidict = {
+			"a":"🇦","b":"🇧","c":"🇨","d":"🇩",	"e":"🇪",
+			"f":"🇫","g":"🇬","h":"🇭",	"i":"🇮","j":"🇯",
+			"k":"🇰","l":"🇱",	"m":"🇲","n":"🇳","o":"🇴",
+			"p":"🇵","q":"🇶","r":"🇷","s":"🇸","t":"🇹",
+			"u":"🇺","v":"🇻","w":"🇼","x":"🇽","y":"🇾","z":"🇿"
+		}
 
 def enumereplace(list):
 	for key in numdict:
@@ -32,7 +43,7 @@ class Transfers:
 					print(f"Fail for: {x}")
 			ctryX.append(x)
 		ctryX = [x.lower() for x in ctryX]
-		for key,value in indicatordict.items():
+		for key,value in unidict.items():
 			ctryX = [x.replace(key,value) for x in ctryX]
 		return ctryX	
 		
@@ -58,16 +69,20 @@ class Transfers:
 			if numpages > 2:
 				await m.add_reaction("⏭") # last
 				
-	async def multilookup(self,ctx,tquery):	
-		query = f"http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?&query={tquery}"
-		replacelist = ["🇦","🇧",'🇨','🇩','🇪','🇫','🇬']
-		async with self.bot.session.get(query) as resp:
+	@commands.group(invoke_without_command=True)
+	async def lookup(self,ctx,*,target:str):
+		""" Perform a database lookup on transfermarkt """
+
+		p = {"query":target}
+		async with self.bot.session.post(f"http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche",params=p) as resp:
 			if resp.status != 200:
-				await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-				return None
+				return await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
 			tree = html.fromstring(await resp.text())
+		
 		cats = [i.lower() for i in tree.xpath(".//div[@class='table-header']/text()")]
-		res = {}
+		
+		replacelist = ["🇦","🇧",'🇨','🇩','🇪','🇫','🇬']
+		
 		matches = {
 			"players":{"cat":"Players","func":self._player},
 			"managers":{"cat":"Managers","func":self._manager},
@@ -77,6 +92,8 @@ class Transfers:
 			"international":{"cat":"International Competitions","func":self._int},
 			"agent":{"cat":"Agents","func":self._agent}
 		}
+		
+		res = {}
 		for i in cats:
 			# Just give us the number of matches by replacing non-digit characters.
 			length = [int(n) for n in i if n.isdigit()][0]
@@ -84,47 +101,44 @@ class Transfers:
 				letter = replacelist.pop(0)
 				for j in matches:
 					if j in i:
-						res[letter] = (f"{letter} {length} {matches[j]['cat']}",ctx.invoke(matches[j]["func"],target=tquery))
-		return res,query	
-	
-	@commands.group(invoke_without_command=True)
-	async def lookup(self,ctx,*,target:str):
-		""" Perform a database lookup on transfermarkt """
-		tquery = target.replace(' ','+')
-		results,query = await self.multilookup(ctx,tquery)
-		results["⏏"] = ("","")
-		sortedlist = [i[0] for i in sorted(results.values())]
+						res[letter] = (f"{letter} {length} {matches[j]['cat']}",ctx.invoke(matches[j]["func"]))
+		if not res:
+			return await ctx.send(f":mag: No results for {target}")
+		
+		sortedlist = [i[0] for i in sorted(res.values())]
+
+		# If only one category has results, invoke that search.
 		if len(sortedlist) == 1:
-			await ctx.send(f":mag: No results for {target}")
-		if len(sortedlist) == 2:
-			await results["🇦"][1]
-		elif len(sortedlist) > 2:
-			embedtext = "\n".join(sortedlist)
-			em = discord.Embed(title="View full results on transermarkt",url=query,description=embedtext)
-			em.set_author(name="Select a category using reactions")
-			em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-			m = await ctx.send(embed=em)
-			for key in sorted(results.keys()):
-				await m.add_reaction(key)
-			await m.add_reaction("⏏")
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏')) or e in results.keys()
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏏": #eject
-					await m.clear_reactions()
-					break
-				elif res.emoji in results.keys():
-					await m.delete()
-					await results[res.emoji][1]
-					break
+			return await res["🇦"][1]
+
+			
+		res["⏏"] = ("","")
+		e = discord.Embed(url = str(resp.url))
+		e.title = "View full results on transermarkt"
+		e.description = "\n".join(sortedlist)
+		e.set_author(name="Select a category using reactions")
+		e.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
+		m = await ctx.send(embed=e)
+		for key in sorted(res.keys()):
+			await m.add_reaction(key)
+
+		def check(reaction,user):
+			if reaction.message.id == m.id and user == ctx.author:
+				e = str(reaction.emoji)
+				return e in res.keys()
+		
+		# Wait for appropriate reaction
+		try:
+			rea = await self.bot.wait_for("reaction_add",check=check,timeout=120)
+		except asyncio.TimeoutError:
+			return await m.clear_reactions()
+		rea = rea[0]
+		if rea.emoji == "⏏": #eject cancels.
+			return await m.clear_reactions()
+		elif rea.emoji in res.keys():
+			# invoke appropriate subcommand for category selection.
+			await m.delete()
+			return await res[rea.emoji][1]
 			
 
 	@lookup.command(name="player",invoke_without_command=True)
