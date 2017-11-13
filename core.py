@@ -16,6 +16,7 @@ load = [
 	'ext.reactions','ext.scores', 'ext.sidebar',
 	'ext.tables','ext.teams','ext.twitter','ext.transfers',	
 	'ext.tv','ext.wiki'
+	# 'ext.radio',
 ]
 					
 # Enable Logging
@@ -29,9 +30,11 @@ description = "Football lookup bot by Painezor#8489"
 #help_attrs = dict(hidden=True)
 
 async def get_prefix(bot, message):
+	if not f"{message.guild.id}" in bot.config:
+		bot.config["message.guild.id"] = {"prefix":""}
 	try:
 		pref = bot.config[f"{message.guild.id}"]["prefix"]
-	except KeyError:
+	except TypeError:
 		pref = []
 	return commands.when_mentioned_or(*pref)(bot, message)
 
