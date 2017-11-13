@@ -13,7 +13,6 @@ class Twitter:
 	def __init__(self, bot):
 		self.bot = bot
 		self.tweetson = True
-		self.tweetdelay = 0
 		with open("twitter.json") as f:
 			self.track = json.load(f)
 		self.pclient = PeonyClient(**self.bot.credentials['Twitter'])
@@ -108,8 +107,6 @@ class Twitter:
 				e.set_thumbnail(url=u.profile_image_url)
 				e.timestamp = datetime.strptime(t.created_at,"%a %b %d %H:%M:%S %z %Y")
 				e.set_footer(icon_url=footericon,text="Twitter")
-				if self.tweetdelay != 0:
-					e.set_footer(text=f"Twitter (Delayed by {self.tweetdelay}s)",icon_url=footericon)
 				
 				lk = f"http://www.twitter.com/{u.screen_name}/status/{t.id_str}"
 				e.title = f"{u.name} (@{u.screen_name})"
@@ -152,11 +149,9 @@ class Twitter:
 						v = ", ".join([f"[{i}]({j})" for i, j in en])
 						e.add_field(name="Attached Videos",value=v,inline=True)
 					else:
-						await asyncio.sleep(self.tweetdelay)
 						await destin.send(embed=e)
 						await destin.send(videos[0])
 				else:
-					await asyncio.sleep(self.tweetdelay)
 					await destin.send(embed=e)
 
 	@commands.group(aliases=["tweet","tweets","checkdelay","twstatus"],invoke_without_command=True)
@@ -167,10 +162,6 @@ class Twitter:
 		e.set_thumbnail(url="https://i.imgur.com/jSEtorp.png")
 		if self.tweetson:
 			e.description = "```diff\n+ ENABLED```"
-			if self.tweetdelay > 0:
-				footer = f"Tweet Delay is currently set to `{self.tweetdelay}` seconds"
-			else:
-				footer = "Tweets currently being output as soon as they are recieved."
 		else:
 			e.description = "```diff\n- DISABLED```"
 			e.color = 0xff0000
@@ -202,16 +193,6 @@ class Twitter:
 				pass
 		await ctx.send(embed=e)
 	
-	@twitter.command(name="delay")
-	@commands.is_owner()
-	async def _delay(self,ctx,delay:int = 0):
-		""" Delays tweets by the specified amount of seconds """
-		self.tweetdelay = min(delay,600)
-		e = discord.Embed(color=0x7EB3CD)
-		e.description = f"<:tweet:332196044769198093> Tweet delay is now \
-						{self.tweetdelay} seconds"
-		await ctx.send(embed=e)
-		
 	@twitter.command(name="on",aliases=["start"])
 	@commands.is_owner()
 	async def _on(self,ctx):
@@ -266,11 +247,5 @@ class Twitter:
 			self.track.pop(trk[username.lower()])
 			await self._save()
 		
-	@commands.command(aliases = ["tweetdelay"])
-	@commands.has_permissions(manage_messages=True) 
-	async def matchmode(self,ctx,delay = "0"):
-		""" Delays tweets by the specified amount of seconds """
-		await ctx.invoke(self._delay,ctx,delay)
-
 def setup(bot):	
 	bot.add_cog(Twitter(bot))
