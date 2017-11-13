@@ -3,16 +3,56 @@ import discord, aiohttp, asyncio
 from lxml import html
 from PIL import Image, ImageDraw, ImageFont
 import pycountry
+import datetime
 import operator
 
-headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36'}
-ctrydict = {"Wales":"gb","England":"gb","Scotland":"gb","Northern Ireland":"gb","Cote d'Ivoire":"ci","Venezuela":"ve","Macedonia":"mk","Kosovo":"xk","Faroe Island":"fo","Trinidad and Tobago":"tt","Congo DR":"cd","Moldova":"md","Korea, South":"kr","Korea, North":"kp", "Bolivia":"bo","Iran":"ir","Hongkong":"hk","Tahiti":"fp","Vietnam":"vn","Chinese Taipei (Taiwan)":"tw","Russia":"ru","N/A":"x","Cape Verde":"cv","American Virgin Islands":"vi","Turks- and Caicosinseln":"tc","Czech Republic":"cz","CSSR":"cz","Neukaledonien":"nc","St. Kitts &Nevis":"kn","Palästina":"ps","Osttimor":"tl","Bosnia-Herzegovina":"ba","Laos":"la","The Gambia":"gm","Botsuana":"bw","St. Louis":"lc","Tanzania":"tz","St. Vincent & Grenadinen":"vc","Cayman-Inseln":"ky","Antigua and Barbuda":"ag","British Virgin Islands":"vg","Mariana Islands":"mp","Sint Maarten":"sx","Federated States of Micronesia":"fm","Netherlands Antilles":"nl"}
-
-numdict = {
-	"0":"0⃣","1":"1⃣","2":"2⃣","3":"3⃣","4":"4⃣",
-	"5":"5⃣","6":"6⃣","7":"7⃣","8":"8⃣","9":"9⃣"
-	}
-
+# Manual Country Code Flag Dict
+ctrydict = {
+    "American Virgin Islands": "vi",
+    "Antigua and Barbuda": "ag",
+    "Bolivia": "bo",
+    "Bosnia-Herzegovina": "ba",
+    "Botsuana": "bw",
+    "British Virgin Islands": "vg",
+    "Cape Verde": "cv",
+    "Cayman-Inseln": "ky",
+    "Chinese Taipei (Taiwan)": "tw",
+    "Congo DR": "cd",
+    "Cote d'Ivoire": "ci",
+    "CSSR": "cz",
+    "Czech Republic": "cz",
+    "England": "gb",
+    "Faroe Island": "fo",
+    "Federated States of Micronesia": "fm",
+    "Hongkong": "hk",
+    "Iran": "ir",
+    "Korea, North": "kp",
+    "Korea, South": "kr",
+    "Kosovo": "xk",
+    "Laos": "la",
+    "Macedonia": "mk",
+    "Mariana Islands": "mp",
+    "Moldova": "md",
+    "N/A": "x",
+    "Netherlands Antilles": "nl",
+    "Neukaledonien": "nc",
+    "Northern Ireland": "gb",
+    "Osttimor": "tl",
+    "Palästina": "ps",
+    "Russia": "ru",
+    "Scotland": "gb",
+    "Sint Maarten": "sx",
+    "St. Kitts &Nevis": "kn",
+    "St. Louis": "lc",
+    "St. Vincent & Grenadinen": "vc",
+    "Tahiti": "fp",
+    "Tanzania": "tz",
+    "The Gambia": "gm",
+    "Trinidad and Tobago": "tt",
+    "Turks- and Caicosinseln": "tc",
+    "Venezuela": "ve",
+    "Vietnam": "vn",
+    "Wales": "gb"}
 unidict = {
 	"a":"🇦","b":"🇧","c":"🇨","d":"🇩","e":"🇪",
 	"f":"🇫","g":"🇬","h":"🇭","i":"🇮","j":"🇯",
@@ -21,103 +61,102 @@ unidict = {
 	"u":"🇺","v":"🇻","w":"🇼","x":"🇽","y":"🇾","z":"🇿"
 	}
 
-def enumereplace(list):
-	for key in numdict:
-		list = [x.replace(key,numdict[key]) for x in list]
-	return list
-	
 class Transfers:
-	""" Test functions """
+	""" Transfermarket lookups """
 	def __init__(self, bot):
 		self.bot = bot
-
-	def getFlags(self,list):
-		ctryX = []
-		for x in list:
-			try:					
-				x = pycountry.countries.get(name=x.title()).alpha_2
-			except KeyError:
-				try:
-					x = ctrydict[x]
-				except KeyError:
-					print(f"Fail for: {x}")
-			ctryX.append(x)
-		ctryX = [x.lower() for x in ctryX]
-		for key,value in unidict.items():
-			ctryX = [x.replace(key,value) for x in ctryX]
-		return ctryX	
+		self.cats = {
+			"players":{
+				"cat":"players",
+				"func":self._player,
+				"querystr":"Spieler_page",
+				"parser":self.parse_players
+			},
+			"managers":{
+				"cat":"Managers",
+				"func":self._manager,
+				"querystr":"Trainer_page",
+				"parser":self.parse_managers
+			},
+			"clubs":{
+				"cat":"Clubs",
+				"func":self._team,
+				"querystr":"Verein_page",
+				"parser":self.parse_clubs
+			},
+			"referees":{
+				"cat":"referees",
+				"func":self._ref,
+				"querystr":"Schiedsrichter_page",
+				"parser":self.parse_refs
+			},
+			"domestic competitions":{
+				"cat":"to competitions",
+				"func":self._cup,
+				"querystr":"Wettbewerb_page",
+				"parser":self.parse_cups
+			},
+			"international Competitions":{
+				"cat":"International Competitions",
+				"func":self._int,
+				"querystr":"Wettbewerb_page",
+				"parser":self.parse_int
+			},
+			"agent":{
+				"cat":"Agents",
+				"func":self._agent,
+				"querystr":"page",
+				"parser":self.parse_agent
+			},
+			"Transfers":{
+				"cat":"Clubs",
+				"func":self._team,
+				"querystr":"Verein_page",
+				"parser":self.parse_clubs,
+				"outfunc":self.get_transfers
+			},
+		}
 		
-	async def paginate(self,list,splitat):
-		paginated = [list[i:i+splitat] for i in range(0, len(list), splitat)]
-		numpages,remainder = divmod(len(list), splitat)
-		pages = []
-		if remainder != 0:
-			numpages += 1
-		pcount = 0
-		for page in paginated:
-			pcount += 1
-			pages.append(page)
-		return pages,numpages
-		
-	async def add_reactions(self,m,numpages):
-		await m.add_reaction("⏏") # eject
-		if numpages > 1:
-			if numpages > 2:
-				await m.add_reaction("⏮") # first
-			await m.add_reaction("◀") # prev
-			await m.add_reaction("▶") # next
-			if numpages > 2:
-				await m.add_reaction("⏭") # last
-				
+	
+	# Base lookup - No Subcommand.
 	@commands.group(invoke_without_command=True)
 	async def lookup(self,ctx,*,target:str):
 		""" Perform a database lookup on transfermarkt """
-
-		p = {"query":target}
+		p = {"query":target} # html encode.
 		async with self.bot.session.post(f"http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche",params=p) as resp:
 			if resp.status != 200:
 				return await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
 			tree = html.fromstring(await resp.text())
 		
-		cats = [i.lower() for i in tree.xpath(".//div[@class='table-header']/text()")]
-		
 		replacelist = ["🇦","🇧",'🇨','🇩','🇪','🇫','🇬']
 		
-		matches = {
-			"players":{"cat":"Players","func":self._player},
-			"managers":{"cat":"Managers","func":self._manager},
-			"clubs":{"cat":"Clubs","func":self._team},
-			"referees":{"cat":"Referees","func":self._ref},
-			"to competitions":{"cat":"Competitions","func":self._cup},
-			"international":{"cat":"International Competitions","func":self._int},
-			"agent":{"cat":"Agents","func":self._agent}
-		}
-		
+		# Header names, scrape then compare (because they don't follow a pattern.)
+		cats = [i.lower() for i in tree.xpath(".//div[@class='table-header']/text()")]
+
 		res = {}
 		for i in cats:
 			# Just give us the number of matches by replacing non-digit characters.
 			length = [int(n) for n in i if n.isdigit()][0]
 			if length:
 				letter = replacelist.pop(0)
-				for j in matches:
+				for j in self.cats:
 					if j in i:
-						res[letter] = (f"{letter} {length} {matches[j]['cat']}",matches[j]['func'])
+						res[letter] = (f"{letter} {length} {self.cats[j]['cat']}",self.cats[j]['func'])
 		if not res:
 			return await ctx.send(f":mag: No results for {target}")
-		
 		sortedlist = [i[0] for i in sorted(res.values())]
 
 		# If only one category has results, invoke that search.
 		if len(sortedlist) == 1:
 			return await res["🇦"][1]
-
 			
 		res["⏏"] = ("","")
 		e = discord.Embed(url = str(resp.url))
-		e.title = "View full results on transermarkt"
+		e.title = "Transfermarkt lookup"
 		e.description = "\n".join(sortedlist)
-		e.set_author(name="Select a category using reactions")
-		e.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
+		e.color = 0x1a3151
+		e.set_footer(text="Select a category using reactions")
+		e.set_thumbnail(url="http://www.australian-people-records.com/images/Search-A-Person.jpg")
 		m = await ctx.send(embed=e)
 		for key in sorted(res.keys()):
 			await m.add_reaction(key)
@@ -138,1004 +177,327 @@ class Transfers:
 		elif rea.emoji in res.keys():
 			# invoke appropriate subcommand for category selection.
 			await m.delete()
-			return await ctx.invoke(res[rea.emoji][1],target=target)
-			
-
-	@lookup.command(name="player",invoke_without_command=True)
-	async def _player(self,ctx,*,target:str):
-		""" Search transfermarkt for players by query string """
-		tquery = target.replace(' ','+')
-		page = 1
-		async def plookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Spieler_page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					if "players" in categories[i - 1]:
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						# Scrape Data
-						pname = tree.xpath('//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()')
-						plink = tree.xpath('//a[@class="spielprofil_tooltip"]/@href')
-						plink = ["http://transfermarkt.co.uk"+x for x in plink]
-						pteam = tree.xpath('//a[@class="vereinprofil_tooltip"]/text()|//a[@title="End of career"]/text()|//a[@title="Unknown"]/text()|//a[@title="---"]/text()|//a[@title="Career break"]/text()|//a[@title="Free agent"]/text()')
-						tlink = tree.xpath('//a[@class="vereinprofil_tooltip"]/@href|//a[@title="End of career"]/@href|//a[@title="Unknown"]/@href|//a[@title="---"]/@href|//a[@title="Career break"]/@href|//a[@title="Free agent"]/@href')
-						tlink = ["http://transfermarkt.co.uk"+x for x in tlink]
-						countrysrch = f'//table[@class="items"][{i}]/tbody/tr/td/img[1]/@title'
-						ages  = tree.xpath('//td[@class="zentriert"][3]/text()')
-						ppos  = tree.xpath('//td[@class="zentriert"][1]/text()')
-						ctry  = tree.xpath(countrysrch)
-						ctry = ctry[:10]
-						ctryX = self.getFlags(ctry)
-
-						# Combine
-						plist = list(zip(ctryX,pname,plink,ages,ppos,pteam,tlink))
-						markup = '\n'.join('{} [{}]({}) {}, {} [{}]({})'.format(*values) for values in plist)
-						em = discord.Embed(title="View full results on transermarkt",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} players")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound
-					i += 1
-				return None
-		try:
-			em,numfound = await plookup(tquery,page)
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10) + 1
-			await self.add_reactions(m,numpages)
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.author)
-				if res.emoji == "⏏": #eject
-					break
-				em,numfound = await plookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					print(len(em.description))
-		except TypeError:
-			if len(target) < 3:
-				await ctx.send(f":mag: {target}: Search queries must be min 3 characters",delete_after=10)
-			else:
-				await ctx.send(f":mag: No results for {target}",delete_after=10)
-				
-	@lookup.command(name="manager",aliases=["staff"])
-	async def _manager(self,ctx,*,target):
-		""" Lookup a manager """
-		tquery = target.replace(' ','+')
-		page = 1
-		async def mlookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Trainer_page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "managers" in categories[i-1].lower():
-						whattable = f'(//table[@class="items"])[{i}]'
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						# Scrape Data
-						pname = subtable.xpath('.//td[@class="hauptlink"]/a/text()')
-						plink = subtable.xpath('.//td[@class="hauptlink"]/a/@href')
-						plink = ["http://transfermarkt.co.uk"+x for x in plink]
-						pteam = subtable.xpath('.//a[@class="vereinprofil_tooltip"]/text()|.//a[@title="End of career"]/text()|.//a[@title="Unknown"]/text()|.//a[@title="---"]/text()|.//a[@title="Career break"]/text()|.//a[@title="Free agent"]/text()')
-						tlink = subtable.xpath('.//a[@class="vereinprofil_tooltip"]/@href|.//a[@title="End of career"]/@href|.//a[@title="Unknown"]/@href|.//a[@title="---"]/@href|.//a[@title="Career break"]/@href|.//a[@title="Free agent"]/@href')
-						tlink = ["http://transfermarkt.co.uk"+x for x in tlink]
-						ages  = subtable.xpath('.//td[@class="zentriert"][2]/text()')
-						ppos  = subtable.xpath('.//td[@class="rechts"][1]/text()')
-						countrysrch = f'(//table[@class="items"])[{i}]/tbody/tr/td/img[1]/@title'
-						ctry  = tree.xpath(countrysrch)
-						ctry = ctry[:10]
-						ctryX = self.getFlags(ctry)
-						# Combine
-						plist = list(zip(ctryX,pname,plink,ages,ppos,pteam,tlink))
-						markup = '\n'.join('{} [{}]({}) {}, {} [{}]({})'.format(*values) for values in plist)
-						em = discord.Embed(title="View full results on transermarkt",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} staff")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound
-					i += 1
-				return None
-		try:
-			em,numfound = await mlookup(tquery,page)
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10) + 1
-			await self.add_reactions(m,numpages)
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.author)
-				if res.emoji == "⏏": #eject
-					break
-				em,numfound = await mlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					print(len(em.description))
-		except TypeError:
-			if len(target) < 3:
-				await ctx.send(f":mag: {target}: Search queries must be min 3 characters",delete_after=10)
-			else:
-				await ctx.send(f":mag: No results for {target}",delete_after=10)
-			
-	@lookup.command(name="team",aliases=["club"])
-	async def _team(self,ctx,*,target):
-		""" Lookup a team """
-		tquery = target.replace(' ','+')
-		page = 1
-		async def tlookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Verein_page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None					
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "clubs" in categories[i - 1].lower():
-						whattable = f'(.//table[@class="items"])[{i}]'
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						# Scrape Data
-						datasq = subtable.xpath('.//table[@class="inline-table"]')
-						teamclub = []
-						for j in datasq:
-							cname = j.xpath('.//td[@class="hauptlink"]/a/text()')[0]
-							clink = j.xpath('.//td[@class="hauptlink"]/a/@href')[0]
-							clink = "http://transfermarkt.co.uk"+clink
-							leagu = j.xpath('.//tr[2]/td/a/text()')
-							lglin = j.xpath('.//tr[2]/td/a/@href')
-							if len(leagu) > 0:
-								leagu = leagu[0]
-								lglin = lglin[0]
-								lglin = "http://transfermarkt.co.uk"+lglin
-								thisclub = f"[{cname}]({clink}) ([{leagu}]({lglin}))"
-							else:
-								thisclub = f"[{cname}]({clink})"
-							teamclub.append(thisclub)
-						ctry = subtable.xpath('.//td/img[@class="flaggenrahmen"]/@title')
-						ctry = [x for x in ctry if x != "\xa0"]
-						ctry = ctry[:10]
-						ctryX = self.getFlags(ctry)
-						# Combine
-						plist = list(zip(ctryX,teamclub))
-						markup = '\n'.join('{} {}'.format(*values) for values in plist)
-						em = discord.Embed(title="View full results on transermarkt",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} clubs")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound
-					i += 1
-				return None
-		try:
-			em,numfound = await tlookup(tquery,page)
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10) + 1
-			await self.add_reactions(m,numpages)
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.author)
-				if res.emoji == "⏏": #eject
-					break
-				em,numfound = await tlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					print(len(em.description))
-		except TypeError:
-			if len(target) < 3:
-				await ctx.send(f":mag: {target}: Search queries must be min 3 characters",delete_after=10)
-			else:
-				await ctx.send(f":mag: No results for {target}",delete_after=10)
+			return await ctx.invoke(res[rea.emoji][1],qry=target)
 	
-	@lookup.command(name="ref",aliases=["referee"])
-	async def _ref(self,ctx,*,target):
-		""" Lookup a referee """
-		tquery = target.replace(' ','+')
-		page = 1
-		async def rlookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Schiedsrichter_page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None		
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "referees" in categories[i - 1].lower():
-						whattable = f'(.//table[@class="items"])[{i}]'
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						print(numfound)
-						# Scrape Data
-						refrow = subtable.xpath('./tbody/tr')
-						refdata = []
-						for j in refrow:
-							rname = j.xpath('.//td[@class="hauptlink"]/a/text()')
-							rlink = j.xpath('.//td[@class="hauptlink"]/a/@href')
-							rage  = j.xpath('.//td[@class="zentriert"]/text()')
-							if len(rname) > 0:
-								rlink[0] = "http://transfermarkt.co.uk"+rlink[0]
-								refdata.append(f"[{rname[0]}]({rlink[0]}) ({rage[0]})")
-						ctry = subtable.xpath('.//td/img[@class="flaggenrahmen"]/@title')
-						ctry = [x for x in ctry if x != "\xa0"]
-						ctry = ctry[:10]
-						ctryX = self.getFlags(ctry)
-						# Combine
-						plist = list(zip(ctryX,refdata))
-						markup = '\n'.join('{} {}'.format(*values) for values in plist)
-						em = discord.Embed(title="View full results on transermarkt",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} referees")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound
-					i += 1
-				return None
-		try:
-			em,numfound = await rlookup(tquery,page)
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10) + 1
-			await self.add_reactions(m,numpages)
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.author)
-				if res.emoji == "⏏": #eject
-					break
-				em,numfound = await rlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					print(len(em.description))
-		except TypeError:
-			if len(target) < 3:
-				await ctx.send(f":mag: {target}: Search queries must be min 3 characters",delete_after=10)
-			else:
-				await ctx.send(f":mag: No results for {target}",delete_after=10)
-
-	@lookup.command(name="cup",aliases=["competition","league","trophy","tournament"])
-	async def _cup(self,ctx,*,target):
-		""" Lookup a club competition """
-		tquery = target.replace(' ','+')
-		page = 1
-		async def rlookup(tquery,page):
-			query = 'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Wettbewerb_page={}&query={}'.format(page,tquery)
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None		
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "to competitions" in categories[i - 1].lower():
-						whattable = '(.//table[@class="items"])[{}]'.format(i)
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						print(numfound)
-						# Scrape Data
-						cuprow = subtable.xpath('./tbody/tr')
-						cupdata = []
-						for j in cuprow:
-							cupname = j.xpath('.//td[2]/a/text()')
-							cuplink = j.xpath('.//td[2]/a/@href')
-							numclubs = j.xpath('.//td[4]/text()')
-							numplayers  = j.xpath('.//td[5]/text()')
-							flag = j.xpath('.//td[3]/img/@title')
-							ctry = self.getFlags(flag)
-							if len(ctry) > 0:
-								ctry = ctry[0]
-								ctry = ctry.replace("\xa0","")
-							else:
-								ctry = ":globe_with_meridians:"
-							if len(cupname) > 0:
-								cuplink[0] = "http://transfermarkt.co.uk"+cuplink[0]
-								if numclubs[0].isdigit():
-									cupdata.append(f"{ctry} [{cupname[0]}]({cuplink[0]}): {numclubs[0]} clubs, {numplayers[0]} players")
-								else:
-									cupdata.append(f"{ctry} [{cupname[0]}]({cuplink[0]})")
-						# Combine
-						markup = '\n'.join(cupdata)
-						em = discord.Embed(title="View full results on transermarkt",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} club competitions")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound
-					i += 1
-				return None
-		try:
-			em,numfound = await rlookup(tquery,page)
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10) + 1
-			await self.add_reactions(m,numpages)
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.author)
-				if res.emoji == "⏏": #eject
-					break
-				em,numfound = await rlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					print(len(em.description))
-		except TypeError:
-			if len(target) < 3:
-				await ctx.send(f":mag: {target}: Search queries must be min 3 characters",delete_after=10)
-			else:
-				await ctx.send(f":mag: No results for {target}",delete_after=10)		
-
+	@lookup.command(name="player")
+	async def _player(self,ctx,*,qry):
+		await self.search(ctx,qry,"players")
+		
+	@lookup.command(name="manager",aliases=["staff","trainer","trainers","managers"])
+	async def _manager(self,ctx,*,qry):
+		await self.search(ctx,qry,"managers")
+		
+	@lookup.command(name="team",aliases=["club","squad","teams","clubs"])
+	async def _team(self,ctx,*,qry):
+		await self.search(ctx,qry,"clubs")
+	
+	@lookup.command(name="ref")
+	async def _ref(self,ctx,*,qry):
+		await self.search(ctx,qry,"referees")
+	
+	@lookup.command(name="cup",aliases=["domestic"])
+	async def _cup(self,ctx,*,qry):
+		await self.search(ctx,qry,"domestic competitions")
+	
 	@lookup.command(name="international",aliases=["int"])
-	async def _int(self,ctx,*,target):
-		""" Lookup an international competition """
-		tquery = target.replace(' ','+')
-		page = 1
-		async def rlookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Wettbewerb_page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None		
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "international" in categories[i - 1].lower():
-						whattable = '(.//table[@class="items"])[{}]'.format(i)
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						print(numfound)
-						# Scrape Data
-						cuprow = subtable.xpath('./tbody/tr')
-						cupdata = []
-						for j in cuprow:
-							cupname = j.xpath('.//td[2]/a/text()')
-							cuplink = j.xpath('.//td[2]/a/@href')
-							numclubs = j.xpath('.//td[3]/text()')
-							numplayers  = j.xpath('.//td[4]/text()')
-							if len(cupname) > 0:
-								cuplink[0] = "http://transfermarkt.co.uk"+cuplink[0]
-								if numclubs[0].isdigit():
-									if int(numclubs[0]) > 0:
-										cupdata.append(f"[{cupname[0]}]({cuplink[0]}): {numclubs[0]} clubs, {numplayers[0]} players")
-									else:
-										cupdata.append(f"[{cupname[0]}]({cuplink[0]})")
-								else:
-									cupdata.append(f"[{cupname[0]}]({cuplink[0]})")
-						# Combine
-						markup = '\n'.join(cupdata)
-						em = discord.Embed(title="View full results on transermarkt",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} international competitions")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound
-					i += 1
-				return None
-		try:
-			em,numfound = await rlookup(tquery,page)
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10) + 1
-			await self.add_reactions(m,numpages)
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.author)
-				if res.emoji == "⏏": #eject
-					break
-				em,numfound = await rlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					print(len(em.description))
-		except TypeError:
-			if len(target) < 3:
-				await ctx.send(f":mag: {target}: Search queries must be min 3 characters",delete_after=10)
-			else:
-				await ctx.send(f":mag: No results for {target}",delete_after=10)
-			
+	async def _int(self,ctx,*,qry):
+		await self.search(ctx,qry,"International Competitions")
+		
 	@lookup.command(name="agent")
-	async def _agent(self,ctx,*,target):
-		""" Lookup an agent """
-		tquery = target.replace(' ','+')
-		page = 1
-		async def rlookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None		
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "agent" in categories[i - 1].lower():
-						whattable = f'(.//table[@class="items"])[{i}]'
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						print(numfound)
-						# Scrape Data
-						agentrow = subtable.xpath('./tbody/tr')
-						agents = []
-						for j in agentrow:
-							company = j.xpath('.//td[2]/a/text()')
-							comlink = j.xpath('.//td[2]/a/@href')
-							if len(company) > 0:
-								comlink[0] = "http://transfermarkt.co.uk"+comlink[0]
-								agents.append(f"[{company[0]}]({comlink[0]})")
-						# Combine
-						markup = '\n'.join(agents)
-						em = discord.Embed(title="View full results on transermarkt",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} agents")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound
-					i += 1
-				return None
-		try:
-			em,numfound = await rlookup(tquery,page)
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10) + 1
-			await self.add_reactions(m,numpages)
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.author)
-				if res.emoji == "⏏": #eject
-					break
-				em,numfound = await rlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					print(len(em.description))
-		except TypeError:
-			if len(target) < 3:
-				await ctx.send(f":mag: {target}: Search queries must be min 3 characters",delete_after=10)
-			else:
-				await ctx.send(f":mag: No results for {target}",delete_after=10)
-			
-	@commands.command(aliases=["suspended","injured"])
-	async def injuries(self,ctx,*,team):
-		""" Get injury data for a team """
-		# Do a search by team
-		tquery = team.replace(' ','+')
-		page = 1
-		async def tlookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Verein_page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None		
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "clubs" in categories[i - 1].lower():
-						whattable = f'(.//table[@class="items"])[{i}]'
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						# Scrape Data
-						datasq = subtable.xpath('.//table[@class="inline-table"]')
-						teamclub = []
-						linklist = []
-						for j in datasq:
-							cname = j.xpath('.//td[@class="hauptlink"]/a/text()')[0]
-							clink = j.xpath('.//td[@class="hauptlink"]/a/@href')[0]
-							clink = "http://transfermarkt.co.uk"+clink
-							leagu = j.xpath('.//tr[2]/td/a/text()')
-							lglin = j.xpath('.//tr[2]/td/a/@href')
-							if len(leagu) > 0:
-								leagu = leagu[0]
-								lglin = lglin[0]
-								lglin = "http://transfermarkt.co.uk"+lglin
-								thisclub = f"[{cname}]({clink}) ([{leagu}]({lglin}))"
-							else:
-								thisclub = f"[{cname}]({clink})"
-							linklist.append(clink)
-							teamclub.append(thisclub)
-						ctry = subtable.xpath('.//td/img[@class="flaggenrahmen"]/@title')
-						ctry = [x for x in ctry if x != "\xa0"]
-						ctry = ctry[:10]
-						ctryX = self.getFlags(ctry)
-						ctry = list(enumerate(ctryX))
-						ctryX = []
-						for x,y in ctry:
-							ctryX.append(f"{x}{y}")
-						ctry = enumereplace(ctryX)
-						# Combine
-						plist = list(zip(ctry,teamclub))
-						markup = '\n'.join('{} {}'.format(*values) for values in plist)
-						em = discord.Embed(title="Select a club using reactions",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} clubs")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound,linklist
-					i += 1
-				return None
-		em,numfound,linklist = await tlookup(tquery,page)
+	async def _agent(self,ctx,*,qry):
+		await self.search(ctx,qry,"Agent")
 		
-		if len(linklist) > 1:
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10)+1
-			if numpages > 1:
-				if numpages > 2:
-					await m.add_reaction("⏮") # first
-				await m.add_reaction("◀") # prev
-			numlist = []
-			for x in em.description.split("\n"):
-				emoji = x[:2]
-				numlist.append(emoji)
-				await m.add_reaction((emoji))			
-			if numpages > 1:
-				await m.add_reaction("▶") # next
-				if numpages > 2:
-					await m.add_reaction("⏭") # last
-			await m.add_reaction("⏏") # eject
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏')) or e in numlist
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					linktogo = None
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.message.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.message.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.message.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.message.author)
-				if res.emoji == "⏏": #eject
-					linktogo = None
-					break
-				else:
-					findemoji = [key for key, value in numdict.items() if value == res.emoji][0] # This code is cancer
-					linktogo = linklist[int(findemoji)] # get position in dict for id (what an ugly hack)
-					break
-				em,numfound,linklist = await tlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					await ctx.send("Results list for this page is too long for the embed")
-		else:
-			linktogo = linklist[0]
-		
-		# Switch to actual injuries page.
-		await m.delete()
-		link = linktogo.replace("/startseite/","/sperrenundverletzungen/")
-			
-		async with self.bot.session.get(link) as resp: #Finally get the actual injured players page for the team
+	@commands.command()
+	async def transfers(self,ctx,*,qry):
+		if ctx.channel.id == 332163136239173632:
+			return await ctx.send(bot.get_channel(332167049273016320).mention)
+		await self.search(ctx,qry,"Transfers",special=True)
+	
+	async def fetch(self,ctx,category,query,page):
+		p = {"query":query,self.cats[category]["querystr"]:page}
+		url = 'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche'
+		async with self.bot.session.post(url,params=p) as resp:
 			if resp.status != 200:
-				ctx.send(f"HTTP Error trying to access {linktogo}: Code {resp.status}")
+				await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
 				return None
-			tree = html.fromstring(await resp.text())
-			pname   = tree.xpath('descendant::table[@class="items"][1]/tbody/tr/td/table[@class="inline-table"]/tr/td/a[@class="spielprofil_tooltip"]/text()')
-			ppos    = tree.xpath('descendant::div[@id="yw1"]/table[@class="items"][1]/tbody/tr/td/table[@class="inline-table"]/tr/td[1]/text()')
-			reason  = tree.xpath('descendant::div[@id="yw1"]/table[@class="items"][1]/tbody/tr/td[3]/text()')
-			injdate = tree.xpath('descendant::div[@id="yw1"]/table[@class="items"][1]/tbody/tr/td[4]/text()')
-			returns = tree.xpath('descendant::div[@id="yw1"]/table[@class="items"][1]/tbody/tr/td[5]/text()')
-			outfor  = tree.xpath('descendant::div[@id="yw1"]/table[@class="items"][1]/tbody/tr/td[6]/a/text()')
-			picture = tree.xpath('descendant::div[@id="yw1"]/table[@class="items"][1]/tbody/tr/td/table[@class="inline-table"]/tr/td/img/@src')
-			ppos    = [x for x in ppos if x != "\t\t"]
-			ppos    = [x for x in ppos if x != "\r\n\t\t\t"]
-			injured = list(zip(pname,ppos,reason,injdate,returns,outfor,picture))
+			tree = html.fromstring(await resp.text())	
+		categ = self.cats[category]["cat"]
+		
+		# Get trs of table after matching header / {categ} name.
+		matches = f".//div[@class='box']/div[@class='table-header'][contains(text(),'{categ}')]/following::div[1]//tbody/tr"
+		e = discord.Embed()
+		e.color = 0x1a3151
+		e.title = "View full results on transfermarkt"
+		e.url = str(resp.url)
+		e.set_author(name=tree.xpath(f".//div[@class='table-header'][contains(text(),'{categ}')]/text()")[0])
+		e.description = ""
+		numpages = int("".join([i for i in e.author.name if i.isdigit()])) // 10 + 1
+		e.set_footer(text=f"Page {page} of {numpages}")
+		return e,tree.xpath(matches),numpages
+	
+	async def search(self,ctx,qry,category,special=False):
+		page = 1
+		e,tree,maxpage = await self.fetch(ctx,category,qry,page)
+		if not tree:
+			return await ctx.send("No results.")
+		
+		lines,targets = await self.cats[category]["parser"](tree)
+		
+		def make_embed(e,lines,targets):
+			e.description = ""
+			if special:
+				replacelist = ["🇦","🇧",'🇨','🇩','🇪',
+							   '🇫','🇬',"🇭","🇮","🇯"]
+				reactdict = {}
+				for i,j in zip(lines,targets):
+					emoji = replacelist.pop(0)
+					reactdict[emoji] = j
+					e.description += f"{emoji} {i}\n"
+			else:
+				for i in lines:
+					e.description += f"{i}\n"
+			return e,reactdict
 			
-		paginated,numpages = await self.paginate(injured,1)
-		page = 0
-		em = discord.Embed(title=f"≡ Injuries and Suspensions for {team}",url=link,color=0x111)
-		em.set_thumbnail(url="https://cdn3.iconfinder.com/data/icons/toolbar-people/512/user_forbidden_man_male_profile_account_person-512.png")
-		async def make_embed(paginated,page):
-			field1,field2 = "",""
-			for sublist in paginated[page]: # initial population.
-				player 		= sublist[0]
-				position	= sublist[1]
-				type		= sublist[2]
-				date		= sublist[3]
-				dueback		= sublist[4]
-				missed 		= sublist[5]
-				picture		= sublist[6]
-				em.clear_fields()
-				if dueback =="?":
-					em.add_field(name=f"{player} ({position})",value=f"{type}\nIncident date: {date}\nGames missed: {missed}\n")
-				else:
-					em.add_field(name=f"{player} ({position})",value=f"{type}\nIncident date: {date}\nGames missed: {missed}\nDue back: {dueback}")
-			if numpages > 1:
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"{ctx.author.display_name}: Page {page + 1} of {numpages}")
-		await make_embed(paginated,page)
-		m = await ctx.send(embed=em)
-		await self.add_reactions(m,numpages)
+		e,reactdict = make_embed(e,lines,targets)
+		# Create message and add reactions		
+		m = await ctx.send(embed=e)	
+		await m.add_reaction("⏏") # eject
+		if maxpage > 2:
+			await m.add_reaction("⏮") # first
+		if maxpage > 1:
+			await m.add_reaction("◀") # prev
+		if special:
+			for i in reactdict:
+				await m.add_reaction(i)
+		if maxpage > 1:
+			await m.add_reaction("▶") # next
+		if maxpage > 2:
+			await m.add_reaction("⏭") # last
+		
+		# Only respond to user who invoked command.
 		def check(reaction,user):
 			if reaction.message.id == m.id and user == ctx.author:
 				e = str(reaction.emoji)
-				return e.startswith(('⏮','◀','▶','⏭','⏏'))
+				if special:
+					return e.startswith(('⏮','◀','▶','⏭','⏏')) or e in reactdict
+				else:
+					return e.startswith(('⏮','◀','▶','⏭','⏏'))
+		
+		# Reaction Logic Loop.
 		while True:
 			try:
-				res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
+				res = await self.bot.wait_for("reaction_add",check=check,timeout=30)
 			except asyncio.TimeoutError:
-				await m.clear_reactions()
+				await m.delete()
 				break
 			res = res[0]
 			if res.emoji == "⏮": #first
-				page = 0
-				await m.remove_reaction("⏮",ctx.author)
+				page = 1
+				await m.remove_reaction("⏮",ctx.message.author)
 			if res.emoji == "◀": #prev
-				if page > 0:
+				await m.remove_reaction("◀",ctx.message.author)
+				if page > 1:
 					page = page - 1
-				await m.remove_reaction("◀",ctx.author)
 			if res.emoji == "▶": #next	
-				if page < numpages - 1:
+				await m.remove_reaction("▶",ctx.message.author)
+				if page < maxpage:
 					page = page + 1
-				await m.remove_reaction("▶",ctx.author)
 			if res.emoji == "⏭": #last
-				page = numpages - 1
+				page = maxpage
 				await m.remove_reaction("⏭",ctx.message.author)
 			if res.emoji == "⏏": #eject
+				await m.clear_reactions()
 				break
-			await make_embed(paginated,page)
-			await m.edit(embed=em)
+			if res.emoji in reactdict:
+				await m.delete()
+				match = reactdict[res.emoji]
+				return await self.cats[category]["outfunc"](ctx,e,match)
 
-	@commands.command()
-	async def transfers(self,ctx,*,team):
-		""" Get transfers for this window for a team """
-		# Do a search by team
-		tquery = team.replace(' ','+')
-		page = 1
-		async def tlookup(tquery,page):
-			query = f'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?Verein_page={page}&query={tquery}'
-			async with self.bot.session.get(query) as resp:
-				if resp.status != 200:
-					await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
-					return None		
-				tree = html.fromstring(await resp.text())
-				categories = tree.xpath("descendant::div[@class='table-header']/text()")
-				for i in range (1,len(categories)+1):
-					# select correct table
-					if "clubs" in categories[i - 1].lower():
-						whattable = f'(.//table[@class="items"])[{i}]'
-						subtable = tree.xpath(whattable)[0]
-						length = [int(n) for n in categories[i-1].split() if n.isdigit()]
-						numfound = length[0]
-						# Scrape Data
-						datasq = subtable.xpath('.//table[@class="inline-table"]')
-						teamclub = []
-						linklist = []
-						for j in datasq:
-							cname = j.xpath('.//td[@class="hauptlink"]/a/text()')[0]
-							clink = j.xpath('.//td[@class="hauptlink"]/a/@href')[0]
-							clink = "http://transfermarkt.co.uk"+clink
-							leagu = j.xpath('.//tr[2]/td/a/text()')
-							lglin = j.xpath('.//tr[2]/td/a/@href')
-							if len(leagu) > 0:
-								leagu = leagu[0]
-								lglin = lglin[0]
-								lglin = "http://transfermarkt.co.uk"+lglin
-								thisclub = f"[{cname}]({clink}) ([{leagu}]({lglin}))"
-							else:
-								thisclub = f"[{cname}]({clink})"
-							linklist.append(clink)
-							teamclub.append(thisclub)
-						ctry = subtable.xpath('.//td/img[@class="flaggenrahmen"]/@title')
-						ctry = [x for x in ctry if x != "\xa0"]
-						ctry = ctry[:10]
-						ctryX = self.getFlags(ctry)
-						ctry = list(enumerate(ctryX))
-						ctryX = []
-						for x,y in ctry:
-							ctryX.append(f"{x}{y}")
-						ctry = enumereplace(ctryX)
-						# Combine
-						plist = list(zip(ctry,teamclub))
-						markup = '\n'.join('{} {}'.format(*values) for values in plist)
-						em = discord.Embed(title="Select a club using reactions",url=query,description=markup)
-						em.set_author(name=f"Found {numfound} clubs")
-						em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-						if numfound > 10:
-							em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {1} of {(numfound // 10)+1} ({ctx.author.display_name})")
-						return em,numfound,linklist
-					i += 1
-				return None
-		em,numfound,linklist = await tlookup(tquery,page)
-		
-		if len(linklist) > 1:
-			m = await ctx.send(embed=em)
-			numpages = (numfound // 10)+1
-			if numpages > 1:
-				if numpages > 2:
-					await m.add_reaction("⏮") # first
-				await m.add_reaction("◀") # prev
-			numlist = []
-			for x in em.description.split("\n"):
-				emoji = x[:2]
-				numlist.append(emoji)
-				await m.add_reaction((emoji))			
-			if numpages > 1:
-				await m.add_reaction("▶") # next
-				if numpages > 2:
-					await m.add_reaction("⏭") # last
-			await m.add_reaction("⏏") # eject
-			def check(reaction,user):
-				if reaction.message.id == m.id and user == ctx.author:
-					e = str(reaction.emoji)
-					return e.startswith(('⏮','◀','▶','⏭','⏏')) or e in numlist
-			while True:
-				try:
-					res = await self.bot.wait_for("reaction_add",check=check,timeout=120)
-				except asyncio.TimeoutError:
-					await m.clear_reactions()
-					linktogo = None
-					break
-				res = res[0]
-				if res.emoji == "⏮": #first
-					page = 1
-					await m.remove_reaction("⏮",ctx.message.author)
-				if res.emoji == "◀": #prev
-					await m.remove_reaction("◀",ctx.message.author)
-					if page > 1:
-						page = page - 1
-				if res.emoji == "▶": #next	
-					await m.remove_reaction("▶",ctx.message.author)
-					if page < numpages:
-						page = page + 1
-				if res.emoji == "⏭": #last
-					page = numpages
-					await m.remove_reaction("⏭",ctx.message.author)
-				if res.emoji == "⏏": #eject
-					linktogo = None
-					break
-				else:
-					findemoji = [key for key, value in emojidict.items() if value == res.emoji][0] # This code is cancer
-					sorteddict = sorted(emojidict.items(), key=operator.itemgetter(1))
-					linkkey = [y for x,y in enumerate(sorteddict) if y[0] == findemoji] #get index
-					linkkey = linkkey[0][0]
-					linktogo = linklist[int(linkkey)] # get position in dict for id (what an ugly hack)
-					break
-				em,numfound,linklist = await tlookup(tquery,page)
-				em.set_footer(icon_url="http://pix.iemoji.com/twit33/0056.png",text=f"Page {page} of {numpages} ({ctx.author.display_name})")
-				try:
-					await m.edit(embed=em)
-				except:
-					await ctx.send("Results list for this page is too long for the embed")
-		else:
-			linktogo = linklist[0]
-		
-		async with self.bot.session.get(linktogo) as resp: # We have the team page. Now let's find current window.
-			if resp.status != 200:
-				ctx.send(f"HTTP Error trying to access {linktogo}: Code {resp.status}")
-				return None
-			transferspage = "".join(tree.xpath('.//div[@class="col_3"]/ul/li/a/@href'))
-			transferspage = f"http://www.transfermarkt.co.uk{transferspage}"
+			e,tree,maxpage = await self.fetch(ctx,category,qry,page)
+			if tree:
+				lines,targets = await self.cats[category]["parser"](tree)
+				e,reactdict = make_embed(lines,targets)
+				await m.edit(embed=e)
+
+	def get_flag(self,ctry):
+		# Check if pycountry has country
+		try:					
+			ctry = pycountry.countries.get(name=ctry.title()).alpha_2
+		except KeyError:
+			try:
+				# else revert to manual dict.
+				ctry = ctrydict[ctry]
+			except KeyError:
+				print(f"Fail for: {ctry}")
+		ctry = ctry.lower()
+		for key,value in unidict.items():
+			ctry = ctry.replace(key,value)
+		return ctry
+
+	async def parse_players(self,trs):	
+		output,targets = [],[]
+		for i in trs:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			plink = "".join(i.xpath('.//a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			team  = "".join(i.xpath('.//td[3]/a/img/@alt'))
+			tlink = "".join(i.xpath('.//td[3]/a/img/@href'))
+			tlink = f"http://transfermarkt.co.uk{tlink}"
+			age   = "".join(i.xpath('.//td[4]/text()'))
+			ppos  = "".join(i.xpath('.//td[2]/text()'))
+			flag  = self.get_flag( "".join(i.xpath('.//td/img[1]/@title')))
 			
-		async with self.bot.session.get(transferspage) as resp: # Finally on the right page...
-			if resp.status != 200:
-				ctx.send(f"HTTP Error trying to access {linktogo}: Code {resp.status}") # Rip
-				return None
-			tree = html.fromstring(await resp.text())
-			intable = tree.xpath('//div[@class="box"][3]/div[@class="responsive-table"]/table/tbody')[0]
-			outtable = tree.xpath('//div[@class="box"][4]/div[@class="responsive-table"]/table/tbody')[0]
-			inplayers = intable.xpath('./tr')
-			outplayers = outtable.xpath('./tr')
-			def parseplayers(plist):
-				returnlist = []
-				for i in plist:
-					pname = i.xpath('.//td/a[@class="spielprofil_tooltip"]/text()')
-					plink = i.xpath('.//td/a[@class="spielprofil_tooltip"]/@href')
-					plink = f"http://www.transfermarkt.co.uk/{plink[0]}"
-					ppos = i.xpath('.//tr[2]/td/text()')
-					plage = i.xpath('.//td[3]/text()')
-					flag = i.xpath('.//td[5]/img/@title')
-					ctry = self.getFlags(flag)
-					fee = i.xpath('.//td[7]/a/text()')
-					thisplayer = f"{ctry[0]} [{pname[0]}]({plink}) ({plage[0]}): {ppos[0]} ({fee[0]})"
-					returnlist.append(thisplayer)
-				return returnlist
-			inlist = parseplayers(inplayers)
-			outlist = parseplayers(outplayers)
+			output.append(f"{flag} [{pname}]({plink}) {age}, {ppos} [{team}]({tlink})")
+			targets.append(plink)
+		return output,targets
 
-			lenin = len(inlist)
-			lenout = len(outlist)
-			em = discord.Embed(title="Winter Transfers 2017 for NUFC",url="http://www.transfermarkt.co.uk/newcastle-united/transfers/verein/762/saison_id/2016/pos//detailpos/0/w_s/w/plus/1#zugaenge")
-			em.set_thumbnail(url="http://combiboilersleeds.com/images/search/search-8.jpg")
-			inlist = "\n".join(inlist)
-			em.add_field(name="In",value=inlist,inline=False)
-			if lenout > 0:
-				outlist = "\n".join(outlist)
-				em.add_field(name="Out",value=outlist,inline=False)
-			em.set_footer(icon_url="http://emojipedia-us.s3.amazonaws.com/cache/61/7d/617dbfd2c46e78eb277eb5509fb85efe.png",text="{} in, {} out".format(lenin,lenout))
-			await ctx.send(embed=em)
+	async def parse_managers(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			mname = "".join(i.xpath('.//td[@class="hauptlink"]/a/text()'))
+			mlink = "".join(i.xpath('.//td[@class="hauptlink"]/a/@href'))
+			mlink = f"http://transfermarkt.co.uk{mlink}"
+			team  = "".join(i.xpath('.//td[2]/a/img/@alt'))
+			tlink = "".join(i.xpath('.//td[2]/a/img/@href'))
+			tlink = f"http://transfermarkt.co.uk{tlink}"
+			age   = "".join(i.xpath('.//td[3]/text()'))
+			job   = "".join(i.xpath('.//td[5]/text()'))
+			flag  = self.get_flag("".join(i.xpath('.//td/img[1]/@title')))
+			
+			output.append(f"{flag} [{mname}]({mlink}) {age}, {job} [{team}]({tlink})")
+			targets.append(mlink)
+		return output,targets
+	
+	async def parse_clubs(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			cname = "".join(i.xpath('.//td[@class="hauptlink"]/a/text()'))
+			clink = "".join(i.xpath('.//td[@class="hauptlink"]/a/@href'))
+			clink = f"http://transfermarkt.co.uk{clink}"
+			leagu = "".join(i.xpath('.//tr[2]/td/a/text()'))
+			lglin = "".join(i.xpath('.//tr[2]/td/a/@href'))
+			flag  = self.get_flag("".join(i.xpath('.//td/img[1]/@title')).strip())
+			if leagu:
+				club = f"[{cname}]({clink}) ([{leagu}]({lglin}))"
+			else:
+				club = f"[{cname}]({clink})"
+				
+			output.append(f"{flag} {club}")
+			targets.append(clink)
+		return output,targets
+	
+	async def parse_refs(self,trs):
+		output = [],[]
+		for i in trs:
+			rname = "".join(i.xpath('.//td[@class="hauptlink"]/a/text()'))
+			rlink = "".join(i.xpath('.//td[@class="hauptlink"]/a/@href'))
+			rage  = "".join(i.xpath('.//td[@class="zentriert"]/text()'))
+			flag  = self.get_flag("".join(i.xpath('.//td/img[1]/@title')).strip())
+			
+			output.append(f"{flag} [{rname}]({rlink}) {rage}")
+			targets.append(rlink)
+		return output,targets
+		
+	async def parse_cups(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			cupname = "".join(i.xpath('.//td[2]/a/text()'))
+			cuplink = "".join(i.xpath('.//td[2]/a/@href'))
+			flag = "".join(i.xpath('.//td[3]/img/@title'))
+			if flag:
+				flag = self.get_flag(flag)
+			else:
+				flag = "🌍"
+			
+			output.append(f"{flag} [{cupname}]({cuplink})")
+			targets.append(cuplink)
+		return output,targets
+	
+	async def parse_int(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			cupname = "".join(i.xpath('.//td[2]/a/text()'))
+			cuplink = "".join(i.xpath('.//td[2]/a/@href'))
+			
+			output.append(f"🌍 [{cupname}]({cuplink})")
+			targets.append(cuplink)
+		return output,targets
+	
+	async def parse_agent(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			company = "".join(i.xpath('.//td[2]/a/text()'))
+			comlink = "".join(i.xpath('.//td[2]/a/@href'))
+			
+			output.append(f"[{company}]({comlink})")
+			targets.append(comlink)
+		return output,targets
+	
+	async def get_transfers(self,ctx,e,target):
+		e.description = ""
+		target = target.replace('startseite','transfers')
+		target = f"{target}/saison_id/{datetime.datetime.now().year}"
+		async with self.bot.session.get(target) as resp:
+			if resp.status != 200:
+				return await ctx.send(f"Error {resp.status} connecting to {resp.url}")
+			tree = html.fromstring(await resp.text())
+		
+		e.set_author(name = tree.xpath('.//head/title[1]/text()')[0],url=str(resp.url))
+		e.set_footer(text=discord.Embed.Empty)
+		ignore,intable,outtable = tree.xpath('.//div[@class="large-8 columns"]/div[@class="box"]')
+		
+		intable = intable.xpath('.//tbody/tr')
+		outtable = outtable.xpath('.//tbody/tr')
+		
+		output = ""
+		loans = ""
+		for i in intable:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			age   = "".join(i.xpath('.//td[3]/text()'))
+			ppos  = "".join(i.xpath('.//td[2]//tr[2]/td/text()'))
+			flag  = self.get_flag(i.xpath('.//td/img[1]/@title')[1])
+			fee = "".join(i.xpath('.//td[6]//text()'))
+			if "loan" in fee.lower():
+				loans += f"{flag} [{pname}]({plink}) {ppos}, {age} ({fee})\n"
+			output += f"{flag} [{pname}]({plink}) {ppos}, {age} ({fee})\n"
+		
+		if output:
+			if len(output) > 1023:
+				output = f"{output[:1019]}..."
+			e.add_field(name="Inbound Transfers",value=output)
+		if loans:
+			if len(loans) > 1023:
+				loans = f"{loans[:1019]}..."
+			e.add_field(name="Inbound Loans",value=loans)
+		
+		output = []
+		loans = []
+		for i in outtable:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			flag  = self.get_flag(i.xpath('.//td/img[1]/@title')[1])
+			fee = "".join(i.xpath('.//td[6]//text()'))
+			if "loan" in fee.lower():
+				loans.append(f"[{pname}]({plink})")
+			output.append(f"[{pname}]({plink})")
+
+		if output:
+			output = ", ".join(output)
+			if len(output) > 1023:
+					output = f"{output[:1019]}..."
+			e.add_field(name="Outbound Transfers",value=output)
+		if loans:
+			if len(loans) > 1023:
+				loans = f"{loans[:1019]}..."
+			e.add_field(name="Outbound Loans",value=loans)
+		await ctx.send(embed=e)
+		
+	@commands.command()
+	async def test(self,ctx):
+		await self.get_transfers(ctx,discord.Embed(),"https://www.transfermarkt.co.uk/newcastle-united/startseite/verein/762/saison_id/2017")
 		
 def setup(bot):
 	bot.add_cog(Transfers(bot))
