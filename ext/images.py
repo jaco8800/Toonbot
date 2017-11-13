@@ -191,7 +191,8 @@ class ImageManip:
 		# To the Executor!
 		df = await self.bot.loop.run_in_executor(None,self.draw_knob,image,
 												 respjson)
-		await ctx.send(file=df)
+		await ctx.send(ctx.author.mention,file=df)
+		await ctx.message.delete()
 		
 	def draw_knob(self,image,respjson):
 		im = Image.open(BytesIO(image)).convert(mode="RGBA")
@@ -200,13 +201,14 @@ class ImageManip:
 		for coords in respjson:
 			mlx = int(coords["faceLandmarks"]["mouthLeft"]["x"])
 			mrx = int(coords["faceLandmarks"]["mouthRight"]["x"])
-			lipy = int(coords["faceLandmarks"]["underLipTop"]["y"])
+			lipy = int(coords["faceLandmarks"]["upperLipBottom"]["y"])
+			lipx = int(coords["faceLandmarks"]["upperLipBottom"]["x"])
 
 			angle= int(coords["faceAttributes"]["headPose"]["roll"] * -1)
 			w = int((mrx - mlx)) * 2
 			h = w
 			tk = ImageOps.fit(knob,(w,h)).rotate(angle)
-			im.paste(tk,box=(int(mlx - w/4),int(lipy)),mask=tk)
+			im.paste(tk,box=(int(lipx - w/2),int(lipy)),mask=tk)
 		output = BytesIO()
 		im.save(output,"PNG")
 		output.seek(0)
@@ -540,7 +542,7 @@ class ImageManip:
 	
 	@commands.command(hidden=True)
 	async def helmet(self,ctx):
-		""" WEW. RUCTIONS. """
+		""" Helmet"""
 		await ctx.send(file=discord.File("helmet.jpg"))
 	
 	@commands.command(hidden=True,aliases=["f"])
@@ -552,7 +554,6 @@ class ImageManip:
 		return message.channel.id in [250476915054477322,293901072731209728]
 	
 	@commands.command(aliases=["cat"])
-	@commands.check(is_ircle)
 	async def pussy(self,ctx):
 		""" Get a random cat image (ircle channel only) """
 		await ctx.trigger_typing()
