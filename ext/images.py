@@ -37,7 +37,7 @@ class ImageManip:
 				if resp.status == 400:
 					await ctx.send(await resp.json())
 				else:
-					await ctx.send(resp.status)
+					await ctx.send(f"HTTP Error {resp.status} recieved accessing project oxford's facial recognition API.")
 				return None, None
 			respjson = await resp.json()
 			
@@ -196,18 +196,17 @@ class ImageManip:
 	def draw_knob(self,image,respjson):
 		im = Image.open(BytesIO(image)).convert(mode="RGBA")
 		knob = Image.open("knob.png")
+		print(respjson)
 		for coords in respjson:
 			mlx = int(coords["faceLandmarks"]["mouthLeft"]["x"])
 			mrx = int(coords["faceLandmarks"]["mouthRight"]["x"])
-			mly = int(coords["faceLandmarks"]["mouthLeft"]["y"])
-			mry = int(coords["faceLandmarks"]["mouthRight"]["y"])
+			lipy = int(coords["faceLandmarks"]["underLipTop"]["y"])
 
 			angle= int(coords["faceAttributes"]["headPose"]["roll"] * -1)
-			w = int((mrx - mry) * 1.5)
-			h = int(w * 1.5)
-			
+			w = int((mrx - mlx)) * 2
+			h = w
 			tk = ImageOps.fit(knob,(w,h)).rotate(angle)
-			im.paste(tk,box=(int(mlx - (w/6)),mly),mask=tk)
+			im.paste(tk,box=(int(mlx - w/4),int(lipy)),mask=tk)
 		output = BytesIO()
 		im.save(output,"PNG")
 		output.seek(0)
