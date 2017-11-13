@@ -1,113 +1,509 @@
 from discord.ext import commands
-from collections import Counter
-from datetime import datetime
-import traceback
-import aiohttp
-import discord
-import asyncio
-import logging
-import praw
-import json
-import sys
+import discord, aiohttp, asyncio
+from lxml import html
+from PIL import Image, ImageDraw, ImageFont
+import pycountry
+import datetime
+import operator
 
-load = [	
-	'ext.admin','ext.fixtures','ext.fun','ext.google','ext.images','ext.info',
-	'ext.meta','ext.mod','ext.mtb','ext.nufc','ext.quotes',
-	'ext.reactions','ext.scores', 'ext.sidebar',
-	'ext.tables','ext.teams','ext.twitter','ext.transfers',	
-	'ext.tv','ext.wiki'
-	# 'ext.radio',
-]
-					
-# Enable Logging
-log = logging.getLogger('discord')
-log.setLevel(logging.INFO)
-handler = logging.FileHandler(filename='Rewrite.log',
-							  encoding='utf-8', mode='w')
-log.addHandler(handler)
+# Manual Country Code Flag Dict
+ctrydict = {
+    "American Virgin Islands": "vi",
+    "Antigua and Barbuda": "ag",
+    "Bolivia": "bo",
+    "Bosnia-Herzegovina": "ba",
+    "Botsuana": "bw",
+    "British Virgin Islands": "vg",
+    "Cape Verde": "cv",
+    "Cayman-Inseln": "ky",
+    "Chinese Taipei (Taiwan)": "tw",
+    "Congo DR": "cd",
+    "Cote d'Ivoire": "ci",
+    "CSSR": "cz",
+    "Czech Republic": "cz",
+    "England": "gb",
+    "Faroe Island": "fo",
+    "Federated States of Micronesia": "fm",
+    "Hongkong": "hk",
+    "Iran": "ir",
+    "Korea, North": "kp",
+    "Korea, South": "kr",
+    "Kosovo": "xk",
+    "Laos": "la",
+    "Macedonia": "mk",
+    "Mariana Islands": "mp",
+    "Moldova": "md",
+    "N/A": "x",
+    "Netherlands Antilles": "nl",
+    "Neukaledonien": "nc",
+    "Northern Ireland": "gb",
+    "Osttimor": "tl",
+    "Palästina": "ps",
+    "Russia": "ru",
+    "Scotland": "gb",
+    "Sint Maarten": "sx",
+    "St. Kitts &Nevis": "kn",
+    "St. Louis": "lc",
+    "St. Vincent & Grenadinen": "vc",
+    "Tahiti": "fp",
+    "Tanzania": "tz",
+    "The Gambia": "gm",
+    "Trinidad and Tobago": "tt",
+    "Turks- and Caicosinseln": "tc",
+    "Venezuela": "ve",
+    "Vietnam": "vn",
+    "Wales": "gb"}
+unidict = {
+	"a":"🇦","b":"🇧","c":"🇨","d":"🇩","e":"🇪",
+	"f":"🇫","g":"🇬","h":"🇭","i":"🇮","j":"🇯",
+	"k":"🇰","l":"🇱","m":"🇲","n":"🇳","o":"🇴",
+	"p":"🇵","q":"🇶","r":"🇷","s":"🇸","t":"🇹",
+	"u":"🇺","v":"🇻","w":"🇼","x":"🇽","y":"🇾","z":"🇿"
+	}
 
-description = "Football lookup bot by Painezor#8489"
-#help_attrs = dict(hidden=True)
-
-async def get_prefix(bot, message):
-	if not f"{message.guild.id}" in bot.config:
-		bot.config["message.guild.id"] = {"prefix":""}
-	try:
-		pref = bot.config[f"{message.guild.id}"]["prefix"]
-	except TypeError:
-		pref = []
-	return commands.when_mentioned_or(*pref)(bot, message)
-
-bot = commands.Bot(command_prefix=get_prefix, description=description,
-				   pm_help=None, )	#help_attrs=help_attrs
-				   
-# Errors and invalid commands outputs
-@bot.event
-async def on_command_error(ctx, error):
-	if isinstance(error, commands.NoPrivateMessage):
-		await ctx.author.send('Command cannot be used in private messages.')
-	elif isinstance(error, commands.DisabledCommand):
-		await ctx.send('Sorry. This command is disabled and cannot be used.')
-	elif isinstance(error, commands.CommandInvokeError):
-		print('In {0.command.qualified_name}:'.format(ctx), file=sys.stderr)
-		traceback.print_tb(error.original.__traceback__)
-		print('{0.__class__.__name__}: {0}'.format(error.original),
-			  file=sys.stderr)
-
-# On Client Ready
-@bot.event
-async def on_ready():
-	print(f'{bot.user.name}: {datetime.now()}\n---------------------')
-	if not hasattr(bot, 'uptime'):
-		bot.uptime = datetime.utcnow()
-	# bot.reddit = praw.Reddit(**bot.credentials["Reddit"])
-	bot.reddit = praw.Reddit(**bot.credentials["Reddit"])
-	bot.session = aiohttp.ClientSession(loop=bot.loop)
-	for c in load:
-		try:
-			bot.load_extension(c)
-		except Exception as e:
-			print(f'Failed to load cog {c}\n{type(e).__name__}: {e}')
-	await asyncio.sleep(5)
-	await bot.change_presence(game=discord.Game(name="Use !help",type=0))
-
-# Define command handler
-@bot.event
-async def on_command(ctx):
-	bot.commands_used[ctx.command.name] += 1
-	destination = None 
-	if isinstance(ctx.channel,discord.abc.PrivateChannel):
-		destination = 'Private Message'
-	else:
-		destination = f'#{ctx.channel.name} ({ctx.guild.name})'
-	log.info(f'{ctx.message.created_at}: {ctx.author.name} in'
-			  '{destination}: {ctx.message.content}')
-
-# Load bot and logging.
-if __name__ == '__main__':
-	with open('credentials.json') as f:
-		bot.credentials = json.load(f)
-	bot.clientid = bot.credentials['bot']['client_id']
-	bot.commands_used = Counter()
-	with open('ignored.json') as f:
-		bot.ignored = json.load(f)
-	with open('leagues.json') as f:
-		bot.leagues = json.load(f)
-	with open('config.json') as f:
-		bot.config = json.load(f)
-	with open('tv.json') as f:
-		bot.tv = json.load(f)
-	with open('comps.json') as f:
-		bot.comps = json.load(f)
-	bot.configlock = asyncio.Lock()
-	bot.run(bot.credentials['bot']['token'])
+class Transfers:
+	""" Transfermarket lookups """
+	def __init__(self, bot):
+		self.bot = bot
+		self.cats = {
+			"players":{
+				"cat":"players",
+				"func":self._player,
+				"querystr":"Spieler_page",
+				"parser":self.parse_players
+			},
+			"managers":{
+				"cat":"Managers",
+				"func":self._manager,
+				"querystr":"Trainer_page",
+				"parser":self.parse_managers
+			},
+			"clubs":{
+				"cat":"Clubs",
+				"func":self._team,
+				"querystr":"Verein_page",
+				"parser":self.parse_clubs
+			},
+			"referees":{
+				"cat":"referees",
+				"func":self._ref,
+				"querystr":"Schiedsrichter_page",
+				"parser":self.parse_refs
+			},
+			"domestic competitions":{
+				"cat":"to competitions",
+				"func":self._cup,
+				"querystr":"Wettbewerb_page",
+				"parser":self.parse_cups
+			},
+			"international Competitions":{
+				"cat":"International Competitions",
+				"func":self._int,
+				"querystr":"Wettbewerb_page",
+				"parser":self.parse_int
+			},
+			"agent":{
+				"cat":"Agents",
+				"func":self._agent,
+				"querystr":"page",
+				"parser":self.parse_agent
+			},
+			"Transfers":{
+				"cat":"Clubs",
+				"func":self._team,
+				"querystr":"Verein_page",
+				"parser":self.parse_clubs,
+				"outfunc":self.get_transfers
+			},
+		}
+		
 	
-	# Cleanup.
-	bot.twitask.cancel()
-	bot.scorechecker.cancel()
-	bot.ticker.cancel()
-	bot.session.close() #Aiohttp ClientSession
-	handlers = log.handlers[:]
-	for hdlr in handlers:
-		hdlr.close()
-		log.removeHandler(hdlr)
+	# Base lookup - No Subcommand.
+	@commands.group(invoke_without_command=True)
+	async def lookup(self,ctx,*,target:str):
+		""" Perform a database lookup on transfermarkt """
+		p = {"query":target} # html encode.
+		async with self.bot.session.post(f"http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche",params=p) as resp:
+			if resp.status != 200:
+				return await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
+			tree = html.fromstring(await resp.text())
+		
+		replacelist = ["🇦","🇧",'🇨','🇩','🇪','🇫','🇬']
+		
+		# Header names, scrape then compare (because they don't follow a pattern.)
+		cats = [i.lower() for i in tree.xpath(".//div[@class='table-header']/text()")]
+
+		res = {}
+		for i in cats:
+			# Just give us the number of matches by replacing non-digit characters.
+			length = [int(n) for n in i if n.isdigit()][0]
+			if length:
+				letter = replacelist.pop(0)
+				for j in self.cats:
+					if j in i:
+						res[letter] = (f"{letter} {length} {self.cats[j]['cat']}",self.cats[j]['func'])
+		if not res:
+			return await ctx.send(f":mag: No results for {target}")
+		sortedlist = [i[0] for i in sorted(res.values())]
+
+		# If only one category has results, invoke that search.
+		if len(sortedlist) == 1:
+			return await ctx.invoke(res["🇦"][1],qry=target)
+			
+		res["⏏"] = ("","")
+		e = discord.Embed(url = str(resp.url))
+		e.title = "Transfermarkt lookup"
+		e.description = "\n".join(sortedlist)
+		e.color = 0x1a3151
+		e.set_footer(text="Select a category using reactions")
+		e.set_thumbnail(url="http://www.australian-people-records.com/images/Search-A-Person.jpg")
+		m = await ctx.send(embed=e)
+		for key in sorted(res.keys()):
+			await m.add_reaction(key)
+
+		def check(reaction,user):
+			if reaction.message.id == m.id and user == ctx.author:
+				e = str(reaction.emoji)
+				return e in res.keys()
+		
+		# Wait for appropriate reaction
+		try:
+			rea = await self.bot.wait_for("reaction_add",check=check,timeout=120)
+		except asyncio.TimeoutError:
+			return await m.clear_reactions()
+		rea = rea[0]
+		if rea.emoji == "⏏": #eject cancels.
+			return await m.clear_reactions()
+		elif rea.emoji in res.keys():
+			# invoke appropriate subcommand for category selection.
+			await m.delete()
+			return await ctx.invoke(res[rea.emoji][1],qry=target)
+	
+	@lookup.command(name="player")
+	async def _player(self,ctx,*,qry):
+		await self.search(ctx,qry,"players")
+		
+	@lookup.command(name="manager",aliases=["staff","trainer","trainers","managers"])
+	async def _manager(self,ctx,*,qry):
+		await self.search(ctx,qry,"managers")
+		
+	@lookup.command(name="team",aliases=["club","squad","teams","clubs"])
+	async def _team(self,ctx,*,qry):
+		await self.search(ctx,qry,"clubs")
+	
+	@lookup.command(name="ref")
+	async def _ref(self,ctx,*,qry):
+		await self.search(ctx,qry,"referees")
+	
+	@lookup.command(name="cup",aliases=["domestic"])
+	async def _cup(self,ctx,*,qry):
+		await self.search(ctx,qry,"domestic competitions")
+	
+	@lookup.command(name="international",aliases=["int"])
+	async def _int(self,ctx,*,qry):
+		await self.search(ctx,qry,"International Competitions")
+		
+	@lookup.command(name="agent")
+	async def _agent(self,ctx,*,qry):
+		await self.search(ctx,qry,"Agent")
+		
+	@commands.command(aliases=["loans"])
+	async def transfers(self,ctx,*,qry):
+		if ctx.channel.id == 332163136239173632:
+			return await ctx.send(self.bot.get_channel(332167049273016320).mention)
+		await self.search(ctx,qry,"Transfers",special=True)
+	
+	async def fetch(self,ctx,category,query,page):
+		p = {"query":query,self.cats[category]["querystr"]:page}
+		url = 'http://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche'
+		async with self.bot.session.post(url,params=p) as resp:
+			if resp.status != 200:
+				await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
+				return None
+			tree = html.fromstring(await resp.text())	
+		categ = self.cats[category]["cat"]
+		
+		# Get trs of table after matching header / {categ} name.
+		matches = f".//div[@class='box']/div[@class='table-header'][contains(text(),'{categ}')]/following::div[1]//tbody/tr"
+		e = discord.Embed()
+		e.color = 0x1a3151
+		e.title = "View full results on transfermarkt"
+		e.url = str(resp.url)
+		e.set_author(name=tree.xpath(f".//div[@class='table-header'][contains(text(),'{categ}')]/text()")[0])
+		e.description = ""
+		numpages = int("".join([i for i in e.author.name if i.isdigit()])) // 10 + 1
+		e.set_footer(text=f"Page {page} of {numpages}")
+		return e,tree.xpath(matches),numpages
+	
+	async def search(self,ctx,qry,category,special=False):
+		page = 1
+		e,tree,maxpage = await self.fetch(ctx,category,qry,page)
+		if not tree:
+			return await ctx.send("No results.")
+		
+		lines,targets = await self.cats[category]["parser"](tree)
+		
+		def make_embed(e,lines,targets):
+			e.description = ""
+			if special:
+				replacelist = ["🇦","🇧",'🇨','🇩','🇪',
+							   '🇫','🇬',"🇭","🇮","🇯"]
+				reactdict = {}
+				for i,j in zip(lines,targets):
+					emoji = replacelist.pop(0)
+					reactdict[emoji] = j
+					e.description += f"{emoji} {i}\n"
+			else:
+				for i in lines:
+					e.description += f"{i}\n"
+			return e
+		
+		if special:
+			e,reactdict = make_embed(e,lines,targets)
+		else:
+			e = make_embed(e,lines,targets)
+		# Create message and add reactions		
+		m = await ctx.send(embed=e)	
+		await m.add_reaction("⏏") # eject
+		if maxpage > 2:
+			await m.add_reaction("⏮") # first
+		if maxpage > 1:
+			await m.add_reaction("◀") # prev
+		if special:
+			for i in reactdict:
+				await m.add_reaction(i)
+		if maxpage > 1:
+			await m.add_reaction("▶") # next
+		if maxpage > 2:
+			await m.add_reaction("⏭") # last
+		
+		# Only respond to user who invoked command.
+		def check(reaction,user):
+			if reaction.message.id == m.id and user == ctx.author:
+				e = str(reaction.emoji)
+				if special:
+					return e.startswith(('⏮','◀','▶','⏭','⏏')) or e in reactdict
+				else:
+					return e.startswith(('⏮','◀','▶','⏭','⏏'))
+		
+		# Reaction Logic Loop.
+		while True:
+			try:
+				res = await self.bot.wait_for("reaction_add",check=check,timeout=30)
+			except asyncio.TimeoutError:
+				await m.delete()
+				break
+			res = res[0]
+			if res.emoji == "⏮": #first
+				page = 1
+				await m.remove_reaction("⏮",ctx.message.author)
+			if res.emoji == "◀": #prev
+				await m.remove_reaction("◀",ctx.message.author)
+				if page > 1:
+					page = page - 1
+			if res.emoji == "▶": #next	
+				await m.remove_reaction("▶",ctx.message.author)
+				if page < maxpage:
+					page = page + 1
+			if res.emoji == "⏭": #last
+				page = maxpage
+				await m.remove_reaction("⏭",ctx.message.author)
+			if res.emoji == "⏏": #eject
+				await m.clear_reactions()
+				break
+			if res.emoji in reactdict:
+				await m.delete()
+				match = reactdict[res.emoji]
+				return await self.cats[category]["outfunc"](ctx,e,match)
+
+			e,tree,maxpage = await self.fetch(ctx,category,qry,page)
+			if tree:
+				lines,targets = await self.cats[category]["parser"](tree)
+				e,reactdict = make_embed(lines,targets)
+				await m.edit(embed=e)
+
+	def get_flag(self,ctry):
+		# Check if pycountry has country
+		try:					
+			ctry = pycountry.countries.get(name=ctry.title()).alpha_2
+		except KeyError:
+			try:
+				# else revert to manual dict.
+				ctry = ctrydict[ctry]
+			except KeyError:
+				print(f"Fail for: {ctry}")
+		ctry = ctry.lower()
+		for key,value in unidict.items():
+			ctry = ctry.replace(key,value)
+		return ctry
+
+	async def parse_players(self,trs):	
+		output,targets = [],[]
+		for i in trs:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			plink = "".join(i.xpath('.//a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			team  = "".join(i.xpath('.//td[3]/a/img/@alt'))
+			tlink = "".join(i.xpath('.//td[3]/a/img/@href'))
+			tlink = f"http://transfermarkt.co.uk{tlink}"
+			age   = "".join(i.xpath('.//td[4]/text()'))
+			ppos  = "".join(i.xpath('.//td[2]/text()'))
+			flag  = self.get_flag( "".join(i.xpath('.//td/img[1]/@title')))
+			
+			output.append(f"{flag} [{pname}]({plink}) {age}, {ppos} [{team}]({tlink})")
+			targets.append(plink)
+		return output,targets
+
+	async def parse_managers(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			mname = "".join(i.xpath('.//td[@class="hauptlink"]/a/text()'))
+			mlink = "".join(i.xpath('.//td[@class="hauptlink"]/a/@href'))
+			mlink = f"http://transfermarkt.co.uk{mlink}"
+			team  = "".join(i.xpath('.//td[2]/a/img/@alt'))
+			tlink = "".join(i.xpath('.//td[2]/a/img/@href'))
+			tlink = f"http://transfermarkt.co.uk{tlink}"
+			age   = "".join(i.xpath('.//td[3]/text()'))
+			job   = "".join(i.xpath('.//td[5]/text()'))
+			flag  = self.get_flag("".join(i.xpath('.//td/img[1]/@title')))
+			
+			output.append(f"{flag} [{mname}]({mlink}) {age}, {job} [{team}]({tlink})")
+			targets.append(mlink)
+		return output,targets
+	
+	async def parse_clubs(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			cname = "".join(i.xpath('.//td[@class="hauptlink"]/a/text()'))
+			clink = "".join(i.xpath('.//td[@class="hauptlink"]/a/@href'))
+			clink = f"http://transfermarkt.co.uk{clink}"
+			leagu = "".join(i.xpath('.//tr[2]/td/a/text()'))
+			lglin = "".join(i.xpath('.//tr[2]/td/a/@href'))
+			flag  = self.get_flag("".join(i.xpath('.//td/img[1]/@title')).strip())
+			if leagu:
+				club = f"[{cname}]({clink}) ([{leagu}]({lglin}))"
+			else:
+				club = f"[{cname}]({clink})"
+				
+			output.append(f"{flag} {club}")
+			targets.append(clink)
+		return output,targets
+	
+	async def parse_refs(self,trs):
+		output = [],[]
+		for i in trs:
+			rname = "".join(i.xpath('.//td[@class="hauptlink"]/a/text()'))
+			rlink = "".join(i.xpath('.//td[@class="hauptlink"]/a/@href'))
+			rage  = "".join(i.xpath('.//td[@class="zentriert"]/text()'))
+			flag  = self.get_flag("".join(i.xpath('.//td/img[1]/@title')).strip())
+			
+			output.append(f"{flag} [{rname}]({rlink}) {rage}")
+			targets.append(rlink)
+		return output,targets
+		
+	async def parse_cups(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			cupname = "".join(i.xpath('.//td[2]/a/text()'))
+			cuplink = "".join(i.xpath('.//td[2]/a/@href'))
+			flag = "".join(i.xpath('.//td[3]/img/@title'))
+			if flag:
+				flag = self.get_flag(flag)
+			else:
+				flag = "🌍"
+			
+			output.append(f"{flag} [{cupname}]({cuplink})")
+			targets.append(cuplink)
+		return output,targets
+	
+	async def parse_int(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			cupname = "".join(i.xpath('.//td[2]/a/text()'))
+			cuplink = "".join(i.xpath('.//td[2]/a/@href'))
+			
+			output.append(f"🌍 [{cupname}]({cuplink})")
+			targets.append(cuplink)
+		return output,targets
+	
+	async def parse_agent(self,trs):
+		output,targets = [],[]
+		for i in trs:
+			company = "".join(i.xpath('.//td[2]/a/text()'))
+			comlink = "".join(i.xpath('.//td[2]/a/@href'))
+			
+			output.append(f"[{company}]({comlink})")
+			targets.append(comlink)
+		return output,targets
+	
+	async def get_transfers(self,ctx,e,target):
+		e.description = ""
+		target = target.replace('startseite','transfers')
+		target = f"{target}/saison_id/{datetime.datetime.now().year}"
+		async with self.bot.session.get(target) as resp:
+			if resp.status != 200:
+				return await ctx.send(f"Error {resp.status} connecting to {resp.url}")
+			tree = html.fromstring(await resp.text())
+		
+		e.set_author(name = tree.xpath('.//head/title[1]/text()')[0],url=str(resp.url))
+		e.set_footer(text=discord.Embed.Empty)
+		ignore,intable,outtable = tree.xpath('.//div[@class="large-8 columns"]/div[@class="box"]')
+		
+		intable = intable.xpath('.//tbody/tr')
+		outtable = outtable.xpath('.//tbody/tr')
+		
+		output = ""
+		loans = ""
+		for i in intable:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			age   = "".join(i.xpath('.//td[3]/text()'))
+			ppos  = "".join(i.xpath('.//td[2]//tr[2]/td/text()'))
+			flag  = self.get_flag(i.xpath('.//td/img[1]/@title')[1])
+			fee = "".join(i.xpath('.//td[6]//text()'))
+			if "loan" in fee.lower():
+				loans += f"{flag} [{pname}]({plink}) {ppos}, {age} ({fee})\n"
+			output += f"{flag} [{pname}]({plink}) {ppos}, {age} ({fee})\n"
+		
+		if output:
+			if len(output) > 1023:
+				output = f"{output[:1019]}..."
+			e.add_field(name="Inbound Transfers",value=output)
+		if loans:
+			loans
+			if len(loans) > 1023:
+				loans = f"{loans[:1019]}..."
+			e.add_field(name="Inbound Loans",value=loans)
+		
+		output = []
+		loans = []
+		for i in outtable:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			flag  = self.get_flag(i.xpath('.//td/img[1]/@title')[1])
+			fee = "".join(i.xpath('.//td[6]//text()'))
+			if "loan" in fee.lower():
+				loans.append(f"[{pname}]({plink})")
+			output.append(f"[{pname}]({plink})")
+
+		if output:
+			output = ", ".join(output)
+			if len(output) > 1023:
+					output = f"{output[:1019]}..."
+			e.add_field(name="Outbound Transfers",value=output)
+		if loans:
+			loans = ", ".join(loans)
+			if len(loans) > 1023:
+				loans = f"{loans[:1019]}..."
+				
+			e.add_field(name="Outbound Loans",value=loans)
+		await ctx.send(embed=e)
+		
+	@commands.command()
+	async def test(self,ctx):
+		await self.get_transfers(ctx,discord.Embed(),"https://www.transfermarkt.co.uk/newcastle-united/startseite/verein/762/saison_id/2017")
+		
+def setup(bot):
+	bot.add_cog(Transfers(bot))
