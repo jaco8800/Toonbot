@@ -115,6 +115,13 @@ class Transfers:
 				"parser":self.parse_clubs,
 				"outfunc":self.get_transfers
 			},
+			"Injuries":{
+				"cat":"Clubs",
+				"func":self._team,
+				"querystr":"Verein_page",
+				"parser":self.parse_clubs,
+				"outfunc":self.get_injuries
+			},
 		}
 		
 	
@@ -148,7 +155,7 @@ class Transfers:
 
 		# If only one category has results, invoke that search.
 		if len(sortedlist) == 1:
-			return await res["🇦"][1]
+			return await ctx.invoke(res["🇦"][1],qry=target)
 			
 		res["⏏"] = ("","")
 		e = discord.Embed(url = str(resp.url))
@@ -181,37 +188,50 @@ class Transfers:
 	
 	@lookup.command(name="player")
 	async def _player(self,ctx,*,qry):
+		""" Lookup a player on transfermarkt """
 		await self.search(ctx,qry,"players")
 		
 	@lookup.command(name="manager",aliases=["staff","trainer","trainers","managers"])
 	async def _manager(self,ctx,*,qry):
+		""" Lookup a manager/trainer/club official on transfermarkt """
 		await self.search(ctx,qry,"managers")
 		
 	@lookup.command(name="team",aliases=["club","squad","teams","clubs"])
 	async def _team(self,ctx,*,qry):
+		""" Lookup a team on transfermarkt """
 		await self.search(ctx,qry,"clubs")
 	
 	@lookup.command(name="ref")
 	async def _ref(self,ctx,*,qry):
+		""" Lookup a referee on transfermarkt """
 		await self.search(ctx,qry,"referees")
 	
 	@lookup.command(name="cup",aliases=["domestic"])
 	async def _cup(self,ctx,*,qry):
+		""" Lookup a domestic competition on transfermarkt """
 		await self.search(ctx,qry,"domestic competitions")
 	
 	@lookup.command(name="international",aliases=["int"])
 	async def _int(self,ctx,*,qry):
+		""" Lookup an international competition on transfermarkt """
 		await self.search(ctx,qry,"International Competitions")
 		
 	@lookup.command(name="agent")
 	async def _agent(self,ctx,*,qry):
+		""" Lookup an agent on transfermarkt """
 		await self.search(ctx,qry,"Agent")
 		
-	@commands.command()
+	@commands.command(aliases=["loans"])
 	async def transfers(self,ctx,*,qry):
+		""" Get this season's transfers for a team on transfermarkt """
 		if ctx.channel.id == 332163136239173632:
-			return await ctx.send(bot.get_channel(332167049273016320).mention)
+			return await ctx.send(self.bot.get_channel(332167049273016320).mention)
 		await self.search(ctx,qry,"Transfers",special=True)
+	
+	@commands.command(alises=["bans","suspensions","injured","hurt","banned"])
+	async def injuries(self,ctx,*,qry):
+		""" Get current injuries and suspensions for a team on transfermarkt """
+		await self.search(ctx,qry,"Injuries",special=True)	
 	
 	async def fetch(self,ctx,category,query,page):
 		p = {"query":query,self.cats[category]["querystr"]:page}
@@ -253,12 +273,16 @@ class Transfers:
 					emoji = replacelist.pop(0)
 					reactdict[emoji] = j
 					e.description += f"{emoji} {i}\n"
+				return e,reactdict
 			else:
 				for i in lines:
 					e.description += f"{i}\n"
-			return e,reactdict
-			
-		e,reactdict = make_embed(e,lines,targets)
+			return e
+		
+		if special:
+			e,reactdict = make_embed(e,lines,targets)
+		else:
+			e = make_embed(e,lines,targets)
 		# Create message and add reactions		
 		m = await ctx.send(embed=e)	
 		await m.add_reaction("⏏") # eject
@@ -437,7 +461,12 @@ class Transfers:
 		e.description = ""
 		target = target.replace('startseite','transfers')
 		target = f"{target}/saison_id/{datetime.datetime.now().year}"
-		async with self.bot.session.get(target) as resp:
+		if datetime.datetime.now().month < 7:
+			period = "w"
+		else:
+			period = "s"
+		p = {"w_s":period}
+		async with self.bot.session.get(f"{target}",params=p) as resp:
 			if resp.status != 200:
 				return await ctx.send(f"Error {resp.status} connecting to {resp.url}")
 			tree = html.fromstring(await resp.text())
@@ -449,8 +478,8 @@ class Transfers:
 		intable = intable.xpath('.//tbody/tr')
 		outtable = outtable.xpath('.//tbody/tr')
 		
-		output = ""
-		loans = ""
+		inlist,inloans,outlist,outloans = [],[],[],[]
+
 		for i in intable:
 			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
 			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
@@ -460,20 +489,10 @@ class Transfers:
 			flag  = self.get_flag(i.xpath('.//td/img[1]/@title')[1])
 			fee = "".join(i.xpath('.//td[6]//text()'))
 			if "loan" in fee.lower():
-				loans += f"{flag} [{pname}]({plink}) {ppos}, {age} ({fee})\n"
-			output += f"{flag} [{pname}]({plink}) {ppos}, {age} ({fee})\n"
+				inloans.append(f"{flag} [{pname}]({plink}) {ppos}, {age}\n")
+				continue
+			inlist.append(f"{flag} [{pname}]({plink}) {ppos}, {age} ({fee})\n")
 		
-		if output:
-			if len(output) > 1023:
-				output = f"{output[:1019]}..."
-			e.add_field(name="Inbound Transfers",value=output)
-		if loans:
-			if len(loans) > 1023:
-				loans = f"{loans[:1019]}..."
-			e.add_field(name="Inbound Loans",value=loans)
-		
-		output = []
-		loans = []
 		for i in outtable:
 			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
 			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
@@ -481,23 +500,73 @@ class Transfers:
 			flag  = self.get_flag(i.xpath('.//td/img[1]/@title')[1])
 			fee = "".join(i.xpath('.//td[6]//text()'))
 			if "loan" in fee.lower():
-				loans.append(f"[{pname}]({plink})")
-			output.append(f"[{pname}]({plink})")
-
-		if output:
-			output = ", ".join(output)
-			if len(output) > 1023:
-					output = f"{output[:1019]}..."
-			e.add_field(name="Outbound Transfers",value=output)
-		if loans:
-			if len(loans) > 1023:
-				loans = f"{loans[:1019]}..."
-			e.add_field(name="Outbound Loans",value=loans)
+				outloans.append(f"[{pname}]({plink}), ")
+				continue
+			outlist.append(f"[{pname}]({plink}), ")
+		
+		def write_field(input_list,title):
+			output = ""
+			for i in input_list:
+				if len(i) + len(output) < 1009:
+					input_list.remove(i)
+					output += i
+				else:
+					output += f"And {len(input_list)} more..."
+					break
+			e.add_field(name=title,value=output.strip(","))
+		
+		write_field(inlist,"Inbound Transfers")
+		write_field(inloans,"Inbound Loans")
+		write_field(outlist,"Outbound Transfers")
+		write_field(outloans,"Outbound Loans")
+		
 		await ctx.send(embed=e)
+	
+	async def get_injuries(self,ctx,e,target):
+		e.description = ""
+		target = target.replace('startseite','sperrenundverletzungen')
+		async with self.bot.session.get(f"{target}") as resp:
+			if resp.status != 200:
+				return await ctx.send(f"Error {resp.status} connecting to {resp.url}")
+			tree = html.fromstring(await resp.text())
+		e.set_author(name = tree.xpath('.//head/title[1]/text()')[0],url=str(resp.url))
+		e.set_footer(text=discord.Embed.Empty)
+		hurt,ignore = tree.xpath('.//div[@class="large-8 columns"]/div[@class="box"]')
+		th = "".join(tree.xpath('.//div[@class="dataBild"]/img/@src'))
 		
-	@commands.command()
-	async def test(self,ctx):
-		await self.get_transfers(ctx,discord.Embed(),"https://www.transfermarkt.co.uk/newcastle-united/startseite/verein/762/saison_id/2017")
+		if th:
+			th = th.split('?')[0]
+			print(th)
+			e.set_thumbnail(url=th)
+		hurt = hurt.xpath('.//tbody/tr')
+		hurtlist = []
+		for i in hurt:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			if not pname:
+				continue
+			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			ppos  = "".join(i.xpath('.//td[1]//tr[2]/td/text()'))
+			age  = "".join(i.xpath('./td[2]/text()'))
+			reason = "".join(i.xpath('.//td[3]//text()'))
+			missed = "".join(i.xpath('.//td[6]//text()'))
+			dueback = "".join(i.xpath('.//td[5]//text()'))
+			
+			dueback = f", due back {dueback}" if dueback != "?" else ""
+			hurtlist.append(f"**[{pname}]({plink})** {age}, {ppos}\n{reason} ({missed} games missed{dueback})\n")
 		
+		def write_field(input_list):
+			output = ""
+			for i in input_list:
+				if len(i) + len(output) < 1985:
+					output += i
+				else:
+					output += f"And {len(input_list)} more..."
+					break
+			e.description = output
+			
+		write_field(hurtlist)
+		await ctx.send(embed=e)
+	
 def setup(bot):
 	bot.add_cog(Transfers(bot))
