@@ -17,7 +17,7 @@ from PIL import Image
 from io import BytesIO
 import json
 
-class FxRW:
+class Fixtures:
 	""" Rewrite of fixture & result lookups. """
 	def __init__(self, bot):
 		self.bot = bot
@@ -537,4 +537,4 @@ class FxRW:
 	
 	
 def setup(bot):
-	bot.add_cog(FxRW(bot))
+	bot.add_cog(Fixtures(bot))
