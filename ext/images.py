@@ -197,7 +197,7 @@ class ImageManip:
 	def draw_knob(self,image,respjson):
 		im = Image.open(BytesIO(image)).convert(mode="RGBA")
 		knob = Image.open("knob.png")
-		print(respjson)
+
 		for coords in respjson:
 			mlx = int(coords["faceLandmarks"]["mouthLeft"]["x"])
 			mrx = int(coords["faceLandmarks"]["mouthRight"]["x"])
@@ -433,8 +433,8 @@ class ImageManip:
 		df = discord.File(output,filename="retarded.png")
 		return df
 		
-	@commands.command(aliases=["localman","ruins","ruin"],hidden=True)
-	async def local(self,ctx,*,user: discord.User):
+	@commands.command(aliases=["localman","local","ruin"],hidden=True)
+	async def ruins(self,ctx,*,user: discord.User):
 		""" Local man ruins everything """
 		user = await self.bot.get_user_info(int(user.id))
 		await ctx.trigger_typing()
@@ -568,6 +568,7 @@ class ImageManip:
 					cat = await resp.json()
 					async with self.bot.session.get(cat["file"]) as resp:
 						cat = await resp.content.read()
+						await ctx.send('😺 A Cat has been delivered to your DMs, please take care of him!')
 						fp = discord.File(BytesIO(cat),filename="cat.png")
 						await ctx.author.send("Here's your cat:",file=fp)
 					return
