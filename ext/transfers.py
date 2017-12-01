@@ -38,7 +38,7 @@ ctrydict = {
     "Neukaledonien": "nc",
     "Northern Ireland": "gb",
     "Osttimor": "tl",
-    "Palästina": "ps",
+    "PalÃ¤stina": "ps",
     "Russia": "ru",
     "Scotland": "gb",
     "Sint Maarten": "sx",
@@ -54,11 +54,11 @@ ctrydict = {
     "Vietnam": "vn",
     "Wales": "gb"}
 unidict = {
-	"a":"🇦","b":"🇧","c":"🇨","d":"🇩","e":"🇪",
-	"f":"🇫","g":"🇬","h":"🇭","i":"🇮","j":"🇯",
-	"k":"🇰","l":"🇱","m":"🇲","n":"🇳","o":"🇴",
-	"p":"🇵","q":"🇶","r":"🇷","s":"🇸","t":"🇹",
-	"u":"🇺","v":"🇻","w":"🇼","x":"🇽","y":"🇾","z":"🇿"
+	"a":"ðŸ‡¦","b":"ðŸ‡§","c":"ðŸ‡¨","d":"ðŸ‡©","e":"ðŸ‡ª",
+	"f":"ðŸ‡«","g":"ðŸ‡¬","h":"ðŸ‡­","i":"ðŸ‡®","j":"ðŸ‡¯",
+	"k":"ðŸ‡°","l":"ðŸ‡±","m":"ðŸ‡²","n":"ðŸ‡³","o":"ðŸ‡´",
+	"p":"ðŸ‡µ","q":"ðŸ‡¶","r":"ðŸ‡·","s":"ðŸ‡¸","t":"ðŸ‡¹",
+	"u":"ðŸ‡º","v":"ðŸ‡»","w":"ðŸ‡¼","x":"ðŸ‡½","y":"ðŸ‡¾","z":"ðŸ‡¿"
 	}
 
 class Transfers:
@@ -122,6 +122,13 @@ class Transfers:
 				"parser":self.parse_clubs,
 				"outfunc":self.get_injuries
 			},
+			"Rumours":{
+				"cat":"Clubs",
+				"func":self._team,
+				"querystr":"Verein_page",
+				"parser":self.parse_clubs,
+				"outfunc":self.get_rumours
+			}
 		}
 		
 	
@@ -135,7 +142,7 @@ class Transfers:
 				return await ctx.send(f"HTTP Error connecting to transfernarkt: {resp.status}")
 			tree = html.fromstring(await resp.text())
 		
-		replacelist = ["🇦","🇧",'🇨','🇩','🇪','🇫','🇬']
+		replacelist = ["ðŸ‡¦","ðŸ‡§",'ðŸ‡¨','ðŸ‡©','ðŸ‡ª','ðŸ‡«','ðŸ‡¬']
 		
 		# Header names, scrape then compare (because they don't follow a pattern.)
 		cats = [i.lower() for i in tree.xpath(".//div[@class='table-header']/text()")]
@@ -155,9 +162,9 @@ class Transfers:
 
 		# If only one category has results, invoke that search.
 		if len(sortedlist) == 1:
-			return await ctx.invoke(res["🇦"][1],qry=target)
+			return await ctx.invoke(res["ðŸ‡¦"][1],qry=target)
 			
-		res["⏏"] = ("","")
+		res["â"] = ("","")
 		e = discord.Embed(url = str(resp.url))
 		e.title = "Transfermarkt lookup"
 		e.description = "\n".join(sortedlist)
@@ -179,7 +186,7 @@ class Transfers:
 		except asyncio.TimeoutError:
 			return await m.clear_reactions()
 		rea = rea[0]
-		if rea.emoji == "⏏": #eject cancels.
+		if rea.emoji == "â": #eject cancels.
 			return await m.clear_reactions()
 		elif rea.emoji in res.keys():
 			# invoke appropriate subcommand for category selection.
@@ -228,6 +235,10 @@ class Transfers:
 			return await ctx.send(self.bot.get_channel(332167049273016320).mention)
 		await self.search(ctx,qry,"Transfers",special=True)
 	
+	@commands.command()
+	async def rumours(self,ctx,*,qry):
+		await self.search(ctx,qry,"Rumours",special=True)
+	
 	@commands.command(alises=["bans","suspensions","injured","hurt","banned"])
 	async def injuries(self,ctx,*,qry):
 		""" Get current injuries and suspensions for a team on transfermarkt """
@@ -266,8 +277,8 @@ class Transfers:
 		def make_embed(e,lines,targets):
 			e.description = ""
 			if special:
-				replacelist = ["🇦","🇧",'🇨','🇩','🇪',
-							   '🇫','🇬',"🇭","🇮","🇯"]
+				replacelist = ["ðŸ‡¦","ðŸ‡§",'ðŸ‡¨','ðŸ‡©','ðŸ‡ª',
+							   'ðŸ‡«','ðŸ‡¬',"ðŸ‡­","ðŸ‡®","ðŸ‡¯"]
 				reactdict = {}
 				for i,j in zip(lines,targets):
 					emoji = replacelist.pop(0)
@@ -285,27 +296,27 @@ class Transfers:
 			e = make_embed(e,lines,targets)
 		# Create message and add reactions		
 		m = await ctx.send(embed=e)	
-		await m.add_reaction("⏏") # eject
+		await m.add_reaction("â") # eject
 		if maxpage > 2:
-			await m.add_reaction("⏮") # first
+			await m.add_reaction("â®") # first
 		if maxpage > 1:
-			await m.add_reaction("◀") # prev
+			await m.add_reaction("â—€") # prev
 		if special:
 			for i in reactdict:
 				await m.add_reaction(i)
 		if maxpage > 1:
-			await m.add_reaction("▶") # next
+			await m.add_reaction("â–¶") # next
 		if maxpage > 2:
-			await m.add_reaction("⏭") # last
+			await m.add_reaction("â­") # last
 		
 		# Only respond to user who invoked command.
 		def check(reaction,user):
 			if reaction.message.id == m.id and user == ctx.author:
 				e = str(reaction.emoji)
 				if special:
-					return e.startswith(('⏮','◀','▶','⏭','⏏')) or e in reactdict
+					return e.startswith(('â®','â—€','â–¶','â­','â')) or e in reactdict
 				else:
-					return e.startswith(('⏮','◀','▶','⏭','⏏'))
+					return e.startswith(('â®','â—€','â–¶','â­','â'))
 		
 		# Reaction Logic Loop.
 		while True:
@@ -315,21 +326,21 @@ class Transfers:
 				await m.delete()
 				break
 			res = res[0]
-			if res.emoji == "⏮": #first
+			if res.emoji == "â®": #first
 				page = 1
-				await m.remove_reaction("⏮",ctx.message.author)
-			if res.emoji == "◀": #prev
-				await m.remove_reaction("◀",ctx.message.author)
+				await m.remove_reaction("â®",ctx.message.author)
+			if res.emoji == "â—€": #prev
+				await m.remove_reaction("â—€",ctx.message.author)
 				if page > 1:
 					page = page - 1
-			if res.emoji == "▶": #next	
-				await m.remove_reaction("▶",ctx.message.author)
+			if res.emoji == "â–¶": #next	
+				await m.remove_reaction("â–¶",ctx.message.author)
 				if page < maxpage:
 					page = page + 1
-			if res.emoji == "⏭": #last
+			if res.emoji == "â­": #last
 				page = maxpage
-				await m.remove_reaction("⏭",ctx.message.author)
-			if res.emoji == "⏏": #eject
+				await m.remove_reaction("â­",ctx.message.author)
+			if res.emoji == "â": #eject
 				await m.clear_reactions()
 				break
 			if res.emoji in reactdict:
@@ -431,7 +442,7 @@ class Transfers:
 			if flag:
 				flag = self.get_flag(flag)
 			else:
-				flag = "🌍"
+				flag = "ðŸŒ"
 			
 			output.append(f"{flag} [{cupname}]({cuplink})")
 			targets.append(cuplink)
@@ -443,7 +454,7 @@ class Transfers:
 			cupname = "".join(i.xpath('.//td[2]/a/text()'))
 			cuplink = "".join(i.xpath('.//td[2]/a/@href'))
 			
-			output.append(f"🌍 [{cupname}]({cuplink})")
+			output.append(f"ðŸŒ [{cupname}]({cuplink})")
 			targets.append(cuplink)
 		return output,targets
 	
@@ -532,12 +543,6 @@ class Transfers:
 		e.set_author(name = tree.xpath('.//head/title[1]/text()')[0],url=str(resp.url))
 		e.set_footer(text=discord.Embed.Empty)
 		hurt,ignore = tree.xpath('.//div[@class="large-8 columns"]/div[@class="box"]')
-		th = "".join(tree.xpath('.//div[@class="dataBild"]/img/@src'))
-		
-		if th:
-			th = th.split('?')[0]
-			print(th)
-			e.set_thumbnail(url=th)
 		hurt = hurt.xpath('.//tbody/tr')
 		hurtlist = []
 		for i in hurt:
@@ -555,18 +560,61 @@ class Transfers:
 			dueback = f", due back {dueback}" if dueback != "?" else ""
 			hurtlist.append(f"**[{pname}]({plink})** {age}, {ppos}\n{reason} ({missed} games missed{dueback})\n")
 		
-		def write_field(input_list):
-			output = ""
-			for i in input_list:
-				if len(i) + len(output) < 1985:
-					output += i
-				else:
-					output += f"And {len(input_list)} more..."
-					break
-			e.description = output
+		output = ""
+		numparsed = 0
+		for i in hurtlist:
+			if len(i) + len(output) < 1985:
+				output += i
+			else:
+				output += f"And {len(hurtlist) - numparsed} more..."
+				break
+			numparsed += 1
+		e.description = output
 			
-		write_field(hurtlist)
 		await ctx.send(embed=e)
 	
+	async def get_rumours(self,ctx,e,target):
+		e.description = ""
+		target = target.replace('startseite','geruechte')
+		async with self.bot.session.get(f"{target}") as resp:
+			if resp.status != 200:
+				return await ctx.send(f"Error {resp.status} connecting to {resp.url}")
+			tree = html.fromstring(await resp.text())
+		e.set_author(name = tree.xpath('.//head/title[1]/text()')[0],url=str(resp.url))
+		e.set_footer(text=discord.Embed.Empty)
+		
+		rumours = tree.xpath('.//div[@class="large-8 columns"]/div[@class="box"]')[0]
+		rumours = rumours.xpath('.//tbody/tr')
+		rumorlist = []
+		for i in rumours:
+			pname = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/text()'))
+			if not pname:
+				continue
+			plink = "".join(i.xpath('.//td[@class="hauptlink"]/a[@class="spielprofil_tooltip"]/@href'))
+			plink = f"http://transfermarkt.co.uk{plink}"
+			ppos  = "".join(i.xpath('.//td[2]//tr[2]/td/text()'))
+			mv = "".join(i.xpath('.//td[6]//text()')).strip()
+			flag  = self.get_flag(i.xpath('.//td[3]/img/@title')[0])
+			age  = "".join(i.xpath('./td[4]/text()')).strip()
+			team = "".join(i.xpath('.//td[5]//img/@alt'))
+			tlink = "".join(i.xpath('.//td[5]//img/@href'))
+			odds = "".join(i.xpath('./td[8]//text()')).strip().replace('&nbsp','')
+			source = "".join(i.xpath('./td[7]//@href'))
+			odds = f"[{odds}likely]({source})" if odds != "-" else f"[rumor info]({source})"
+			rumorlist.append(f"{flag} **[{pname}]({plink})** {age}, {ppos} ({mv})\n*[{team}]({tlink})*, {odds}\n")
+		
+		output = ""
+		numparsed = 0
+		for i in rumorlist:
+			if len(i) + len(output) < 1985:
+				output += i
+			else:
+				output += f"And {len(hurtlist) - numparsed} more..."
+				break
+			numparsed += 1
+		e.description = output
+			
+		await ctx.send(embed=e)
+		
 def setup(bot):
 	bot.add_cog(Transfers(bot))
