@@ -13,7 +13,6 @@ class Tv:
 		self.bot = bot
 	
 	async def save_tv(self):
-		print("Save_tv accessed")
 		with await self.bot.configlock:
 			with open('tv.json',"w",encoding='utf-8') as f:
 				json.dump(self.bot.tv,f,ensure_ascii=True,
@@ -43,12 +42,11 @@ class Tv:
 						y = "".join(i.xpath('.//text()'))
 						z = "".join(i.xpath('.//@href'))
 						if y and z:
-							print({y:f"http://www.livesoccertv.com{z}"})
 							self.bot.tv.update({y:f"http://www.livesoccertv.com{z}"})
 			await ctx.send("Done. Saving")
 			await self.save_tv()
 			await ctx.send("Saved.")
-			
+	
 	@commands.command()
 	async def tv(self,ctx,*,team = None):
 		""" Lookup next televised games for a team """
@@ -58,15 +56,33 @@ class Tv:
 				if not matches:
 					return await ctx.send(f"Could not find a matching team/league for {team}.")
 				elif len(matches) > 1:
-					print(matches)
-					await ctx.send(f"{len(matches)} matches found for {team}, please be more specific")
-					await ctx.send(f"```{matches}```")
-					return
+					for i in matches:
+						if team == i:
+							result = i
+					else:
+						count = 0
+						matchdict = {}
+						for i in matches:
+							matchdict[str(count)] = i
+							count += 1
+						matchlist = [f'{i}: {matchdict[i]}' for i in matchdict]
+						strify = '\n'.join(matchlist)
+						msg = f"Please type matching id ```{strify}```"
+						def check(message):
+							if message.author.id == ctx.author.id and message.content in matchdict:
+								return True
+						delme = await ctx.send(msg)
+						result = await self.bot.wait_for("message",check=check,timeout=30)
+						team = matchdict[result.content]
+						await delme.delete()
+						await result.delete()
+				else:
+					team = matches[0]
 
 				e = discord.Embed()
 				async with self.bot.session.get(self.bot.tv[team]) as resp:
 					if resp.status != 200:
-						await ctx.send(f"🚫 {resp.url} returned {resp.status}")
+						await ctx.send(f"ðŸš« {resp.url} returned {resp.status}")
 						return
 					tree = html.fromstring(await resp.text())
 				tvlist = []
@@ -106,7 +122,7 @@ class Tv:
 				if tvlist:
 					e.description = f"Upcoming Televised fixtures for {team}"
 				else:
-					return await ctx.send("Couldn't find any televised matches happening soon, check online at {self.bot.tv[team]}")
+					return await ctx.send(f"Couldn't find any televised matches happening soon, check online at {self.bot.tv[team]}")
 				e.url = f"{resp.url}"
 				e.set_thumbnail(url='http://cdn.livesoccertv.com/images/logo55.png')
 				e.set_footer(text="UK times.")
@@ -116,7 +132,7 @@ class Tv:
 			else:
 				async with self.bot.session.get("http://www.livesoccertv.com/schedules/") as resp:
 					if resp.status != 200:
-						await ctx.send(f"🚫 {resp.url} returned {resp.status}")
+						await ctx.send(f"ðŸš« {resp.url} returned {resp.status}")
 						return
 					tree = html.fromstring(await resp.text())
 					tvlist = []
@@ -127,13 +143,10 @@ class Tv:
 						continue
 					match = "".join(i.xpath('.//td[3]//text()')).strip()
 					ml = i.xpath('.//td[4]//a/text()')
-					print
 					if ml == []:
 						continue
 					else:
 						ml = ", ".join(ml)
-						print(f"{i} {ml}")
-						print(isdone)
 					date = "".join(i.xpath('.//td[@class="datecell"]//span/text()'))
 					date = date.strip()
 					time = i.xpath('.//td[@class="timecell"]//span/text()')
@@ -162,8 +175,11 @@ class Tv:
 					return await ctx.send("Couldn't find any televised matches happening soon, check online at {self.bot.tv[team]}")
 				e.url = f"{resp.url}"
 				e.set_footer(text="UK times.")
+				chars = 0
 				for i,j in tvlist:
-					e.add_field(name=i,value=j,inline=True)
+					if len(j) + len(i) + chars < 5500:
+						e.add_field(name=i,value=j,inline=True)
+					chars += len(i) + len(j)
 				await ctx.send(embed=e)
 
 
