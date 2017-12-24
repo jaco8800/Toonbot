@@ -4,6 +4,28 @@ import discord
 import asyncio
 import json
 
+class TimeParser:
+	def __init__(self, argument):
+		compiled = re.compile(r"(?:(?P<hours>\d+)h)?(?:(?P<minutes>\d+)m)?(?:(?P<seconds>\d+)s)?")
+		self.original = argument
+		try:
+			self.seconds = int(argument)
+		except ValueError as e:
+			match = compiled.match(argument)
+			if match is None or not match.group(0):
+				raise commands.BadArgument('Failed to parse time.') from e
+			self.seconds = 0
+			hours = match.group('hours')
+			if hours is not None:
+				self.seconds += int(hours) * 3600
+			minutes = match.group('minutes')
+			if minutes is not None:
+				self.seconds += int(minutes) * 60
+			seconds = match.group('seconds')
+			if seconds is not None:
+				self.seconds += int(seconds)
+		if self.seconds < 0:
+			raise commands.BadArgument("That was in the past mate...")
 
 class Mod:
 	''' Guild Moderation Commands '''
@@ -15,7 +37,13 @@ class Mod:
 			with open('config.json',"w",encoding='utf-8') as f:
 				json.dump(self.bot.config,f,ensure_ascii=True,
 				sort_keys=True,indent=4, separators=(',',':'))
-	
+				
+	@commands.command()
+	@commands.has_permissions(ban_members=True)
+	async def tempban(self,ctx,time : TimeParser, *, reason=''):
+		""" Temporarily Ban a user """
+		pass
+		
 	@commands.group(invoke_without_command=True)
 	@commands.has_permissions(view_audit_logs=True)
 	async def logs(self,ctx):
@@ -31,7 +59,7 @@ class Mod:
 		await ctx.send(logs)
 	
 	@commands.command()
-	@commands.has_permissions(manage_messages=True)
+	@commands.is_owner()
 	@commands.bot_has_permissions(manage_messages=True)
 	async def say(self, ctx,destin:discord.TextChannel = None,*,tosay):
 		""" Say something as the bot in specified channel """
@@ -51,12 +79,11 @@ class Mod:
 		await topin.pin()
 		
 	@commands.command()
-	@commands.has_permissions(manage_channel=True)
-	@commands.bot_has_permissions(manage_channel=True)
-	async def topic(self,ctx,*,topic):
+	@commands.has_permissions(manage_channels=True)
+	async def topic(self,ctx,*,newtopic):
 		""" Set the topic for the current channel """
-		await ctx.channel.edit(topic=topic)
-		await ctx.send(f"Topic changed to: '{topic}'")
+		await ctx.channel.edit(topic=newtopic)
+		await ctx.send(f"Topic changed to: '{newtopic}'")
 	
 	@commands.has_permissions(manage_messages=True)
 	@commands.command()
@@ -169,17 +196,20 @@ class Mod:
 	@commands.command()
 	@commands.has_permissions(ban_members=True)
 	@commands.bot_has_permissions(ban_members=True)
-	async def ban(self,ctx,member : discord.Member,*,reason="Not specified"):
+	async def ban(self,ctx,member : discord.Member,*,reason="Not specified",days = 0):
 		""" Bans the member from the server """
 		try:
 			await ctx.message.delete()
-			await member.ban(reason=f"{ctx.author.name}: {reason}")
+			await member.ban(reason=f"{ctx.author.name}: {reason}",delete_message_days=days)
 		except discord.Forbidden:
 			await ctx.send(f"⛔ Sorry, I can't ban {member.mention}.")
 		except discord.HTTPException:
 			await ctx.send("❔ Banning failed.")
 		else:
-			c = self.bot.config[f"{ctx.guild.id}"]["mod"]
+			try:
+				c = self.bot.config[f"{ctx.guild.id}"]["mod"]
+			except KeyError:
+				await ctx.author.send(f'Ban performed, but your servers mod channel has not been set to output to. Please use {ctx.prefix}mod set in your mod channel.')
 			mc = self.bot.get_channel(c["channel"])
 			if reason == "Not specified":
 				await ctx.send(f"☠ {member.mention} was banned by {ctx.author.display_name} (No reason provided)")
@@ -256,7 +286,7 @@ class Mod:
 			c = self.bot.config[f"{ctx.guild.id}"]["mod"]
 			mc = self.bot.get_channel(c["channel"])
 		except KeyError:
-			m =f"Mod channel not set, use {self.bot.command_prefix[0]}mod set"
+			m = f"Mod channel not set, use {self.bot.command_prefix[0]}mod set"
 			return await ctx.send(m)
 		e = discord.Embed(color=0x7289DA)
 		e.description = f"Mod Channel: {mc.mention}\n"
@@ -270,6 +300,7 @@ class Mod:
 		e.description += f"Leaves: `{c['leaves']}`\n"
 		e.description += f"Bans: `{c['bans']}`\n"
 		e.description += f"Unbans: `{c['unbans']}`\n"
+		e.description += f"Emojis: `{c['emojis']}`"
 		e.set_thumbnail(url=ctx.guild.icon_url)
 		await ctx.send(embed=e)
 		
@@ -282,7 +313,7 @@ class Mod:
 			self.bot.config.update(thisserv)
 			cf = f"Mod Channel for {ctx.guild.id} set to {ctx.channel.name}"
 		else:
-			self.bot.config[f"{ctx.guild.id}"]["mod"]["channel"] = ctx.channel.id
+			self.bot.config[f"{ctx.guild.id}"]["mod"] = {"channel":ctx.channel.id}
 			cf = f"Mod Channel for {ctx.guild.name} set to {ctx.channel.mention}"
 		await ctx.send(cf)
 		await self._save()
@@ -334,9 +365,25 @@ class Mod:
 		await ctx.send(f"Join messages will no longer be output to {ch}")
 		await self._save()
 	
+	async def on_guild_emojis_update(self,guild,before,after):
+		# Check config to see if outputting.
+		j = self.bot.config[f"{guild.id}"]["mod"]["emojis"]
+		if not j:
+			return
+		
+		# Get mod Channel
+		c = self.bot.config[f"{guild.id}"]["mod"]["channel"]
+		c = self.bot.get_channel(c)
+		
+		# Find if it was addition or removal.
+		newemoji = [i for i in after if i not in before]
+		if not newemoji:
+			removedemoji = [i for i in before if i not in after][0]
+			return await c.send(f"The '{removedemoji.name}' emoji was removed")
+		else:
+			await c.send(f"The {newemoji[0]} emoji was created.")
+			
 	async def on_member_join(self,mem):
-		if mem.guild.id == 332159889587699712:
-			main = self.bot.get_channel(332163136239173632)
 		try:
 			j = self.bot.config[f"{mem.guild.id}"]["mod"]["joins"]
 			c = self.bot.config[f"{mem.guild.id}"]["mod"]["channel"]
@@ -413,7 +460,11 @@ class Mod:
 			async for i in member.guild.audit_logs(limit=1):
 				x = i
 				if str(x.target) == str(member):
-					if x.action.name == "kick":	
+					if x.action.name == "kick":
+						if x.reason is not None:
+							for i in ["roulete","Asked to be"]:
+								if i in x.reason:
+									return
 						return await c.send(f"👢 **Kick**: {member.mention} by {x.user.mention} for {x.reason}.")
 					else:
 						print(dir(x.action))
@@ -422,7 +473,43 @@ class Mod:
 					print(x.target)
 					print(dir(x))
 			await c.send(f"{member.mention} left the server.")
-			
+	
+	@commands.has_permissions(manage_guild=True)
+	@commands.group(invoke_without_command=True)
+	async def emojilog(self,ctx):
+		""" Show or hide addition or removal of emojis <On|Off>"""
+		try:
+			c = self.bot.config[f"{ctx.guild.id}"]["mod"]
+			mc = self.bot.get_channel(c["channel"])	
+		except KeyError:
+			m =f"Mod channel not set, use {self.bot.command_prefix[0]}mod set"
+			return await ctx.send(m)
+		try:
+			status = c["emojis"]
+		except KeyError:
+			c["emojis"] = False
+		await ctx.send(f"Emoji Update messages are currently set to `{status}`")
+	
+	@emojilog.command(name="on")
+	@commands.has_permissions(manage_guild=True)
+	async def emojion(self,ctx):
+		""" Enables output of emoji updation to the mod channel """
+		c = self.bot.config[f"{ctx.guild.id}"]["mod"]
+		j = c["emojis"] = True
+		ch = self.bot.get_channel(c['channel']).mention
+		await ctx.send(f"Emoji Update messages will now be output to {ch}")
+		await self._save()
+
+	@emojilog.command(name="off")
+	@commands.has_permissions(manage_guild=True)
+	async def emojioff(self,ctx):
+		""" Disables output of emoji updation to the mod channel """
+		c = self.bot.config[f"{ctx.guild.id}"]["mod"]
+		j = c["emojis"] = "Off"
+		ch = self.bot.get_channel(c['channel']).mention
+		await ctx.send(f"Ban messages will no longer be output to {ch}")
+		await self._save()	
+		
 	@commands.has_permissions(manage_guild=True)
 	@commands.group(invoke_without_command=True)
 	async def banlog(self,ctx):
@@ -458,7 +545,7 @@ class Mod:
 		ch = self.bot.get_channel(c['channel']).mention
 		await ctx.send(f"Ban messages will no longer be output to {ch}")
 		await self._save()
-			
+	
 	@commands.has_permissions(manage_guild=True)
 	@commands.group(invoke_without_command=True)
 	async def unbanlog(self,ctx):
@@ -509,16 +596,28 @@ class Mod:
 	@commands.is_owner()
 	async def ignore(self,ctx,user : discord.Member,*,reason="Unspecified"):
 		""" Ignore commands from a user (reason opptional)"""
-		if user.id in self.bot.ignored:
+		if f"{user.id}"  in self.bot.ignored:
 			await ctx.send(f"User {user.mention} is already being ignored.")
 		else:
 			self.bot.ignored.update({f"{user.id}":reason})
 			with open('ignored.json',"w",encoding='utf-8') as f:
 				json.dump(self.bot.ignored,f,ensure_ascii=True,
 				sort_keys=True,indent=4, separators=(',',':'))
-			await ctx.zend(f"Ignoring commands from {user.mention}.")
+			await ctx.send(f"Ignoring commands from {user.mention}.")
 		
-	
+	@commands.command()
+	@commands.is_owner()
+	async def unignore(self,ctx,user : discord.Member,*,reason="Unspecified"):
+		""" Ignore commands from a user (reason opptional)"""
+		if not f"{user.id}" in self.bot.ignored:
+			await ctx.send(f"User {user.mention} is not being ignored.")
+		else:
+			del self.bot.ignored[f"{user.id}"]
+			with open('ignored.json',"w",encoding='utf-8') as f:
+				json.dump(self.bot.ignored,f,ensure_ascii=True,
+				sort_keys=True,indent=4, separators=(',',':'))
+			await ctx.send(f"Stopped ignoring commands from {user.mention}.")
+
 	@commands.command()
 	@commands.has_permissions(manage_messages=True)
 	@commands.bot_has_permissions(manage_messages=True)
